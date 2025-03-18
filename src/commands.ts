@@ -597,7 +597,7 @@ export function toggleHeader(type: ToggleHeaderType, options?: { useDeprecatedLo
  * @public
  */
 export const toggleHeaderRow: Command = toggleHeader('row', {
-  useDeprecatedLogic: true,
+  useDeprecatedLogic: false,
 })
 
 /**
@@ -606,7 +606,7 @@ export const toggleHeaderRow: Command = toggleHeader('row', {
  * @public
  */
 export const toggleHeaderColumn: Command = toggleHeader('column', {
-  useDeprecatedLogic: true,
+  useDeprecatedLogic: false,
 })
 
 /**
@@ -615,7 +615,7 @@ export const toggleHeaderColumn: Command = toggleHeader('column', {
  * @public
  */
 export const toggleHeaderCell: Command = toggleHeader('cell', {
-  useDeprecatedLogic: true,
+  useDeprecatedLogic: false,
 })
 
 function findNextCell($cell: ResolvedPos, dir: Direction): number | null {
