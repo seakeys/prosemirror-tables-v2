@@ -48,8 +48,38 @@ const schema = new Schema({
       },
     }),
   ),
-  marks: baseSchema.spec.marks,
+  marks: {
+    strong: {
+      toDOM() {
+        return ['strong']
+      },
+      parseDOM: [{ tag: 'strong' }],
+    },
+  },
 })
+
+// 添加一个CSS样式元素到head，用于处理自定义加粗样式
+const styleElement = document.createElement('style')
+styleElement.textContent = `
+ .markdown-star {
+  color: red;
+  font-weight: normal;
+  user-select: text; /* 允许选择但不可编辑 */
+  cursor: text;
+  display: inline-block;
+}
+
+.markdown-content {
+  color: green;
+  font-weight: bold;
+}
+
+.markdown-strong {
+  white-space: nowrap;
+  display: inline-block;
+}
+`
+document.head.appendChild(styleElement)
 
 const menu = buildMenuItems(schema).fullMenu
 function item(label: string, cmd: (state: EditorState) => boolean) {
@@ -100,6 +130,47 @@ if (fix) state = state.apply(fix.setMeta('addToHistory', false))
 
 const view = new EditorView(document.querySelector('#editor'), {
   state,
+  nodeViews: {
+    strong: (node, view, getPos) => {
+      const dom = document.createElement('span')
+      dom.className = 'markdown-strong'
+
+      // 创建前缀星号，但不设为 unselectable
+      const prefix = document.createElement('span')
+      prefix.className = 'markdown-star'
+      prefix.textContent = '**'
+      dom.appendChild(prefix)
+
+      // 内容容器
+      const contentDOM = document.createElement('span')
+      contentDOM.className = 'markdown-content'
+      dom.appendChild(contentDOM)
+
+      // 创建后缀星号
+      const suffix = document.createElement('span')
+      suffix.className = 'markdown-star'
+      suffix.textContent = '**'
+      dom.appendChild(suffix)
+
+      return {
+        dom,
+        contentDOM,
+        update(node) {
+          return true
+        },
+        // 添加光标事件处理
+        stopEvent(event) {
+          // 仅拦截 mousedown 事件以允许自定义点击行为
+          return event.type === 'mousedown' && (event.target === prefix || event.target === suffix)
+        },
+        // 处理星号点击
+        ignoreMutation(mutation) {
+          // 忽略对星号文本内容的修改
+          return mutation.target === prefix || mutation.target === suffix
+        },
+      }
+    },
+  },
 })
 
 declare global {
