@@ -93,20 +93,20 @@ function item(label: string, cmd: (state: EditorState) => boolean) {
   return new MenuItem({ label, select: cmd, run: cmd })
 }
 const tableMenu = [
-  item('Insert column before', addColumnBefore),
-  item('Insert column after', addColumnAfter),
-  item('Delete column', deleteColumn),
-  item('Insert row before', addRowBefore),
-  item('Insert row after', addRowAfter),
-  item('Delete row', deleteRow),
-  item('Delete table', deleteTable),
-  item('Merge cells', mergeCells),
-  item('Split cell', splitCell),
-  item('Toggle header column', toggleHeaderColumn),
-  item('Toggle header row', toggleHeaderRow),
-  item('Toggle header cells', toggleHeaderCell),
-  item('Make cell green', setCellAttr('background', '#dfd')),
-  item('Make cell not-green', setCellAttr('background', null)),
+  item('插入列（前）', addColumnBefore),
+  item('插入列（后）', addColumnAfter),
+  item('删除列', deleteColumn),
+  item('插入行（前）', addRowBefore),
+  item('插入行（后）', addRowAfter),
+  item('删除行', deleteRow),
+  item('删除表格', deleteTable),
+  item('合并单元格', mergeCells),
+  item('拆分单元格', splitCell),
+  item('切换表头列', toggleHeaderColumn),
+  item('切换表头行', toggleHeaderRow),
+  item('切换表头单元格', toggleHeaderCell),
+  item('设置单元格为绿色', setCellAttr('background', '#dfd')),
+  item('取消单元格绿色', setCellAttr('background', null)),
 ]
 menu.splice(2, 0, [new Dropdown(tableMenu, { label: 'Table' })])
 
