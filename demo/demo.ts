@@ -3,15 +3,14 @@ import 'prosemirror-menu/style/menu.css'
 import 'prosemirror-example-setup/style/style.css'
 import 'prosemirror-gapcursor/style/gapcursor.css'
 import '../style/tables.css'
-import '../style/active-cell.css'
 
 import { EditorView } from 'prosemirror-view'
 import { EditorState } from 'prosemirror-state'
 import { DOMParser, Schema } from 'prosemirror-model'
 import { schema as baseSchema } from 'prosemirror-schema-basic'
 import { keymap } from 'prosemirror-keymap'
-import { exampleSetup } from 'prosemirror-example-setup'
-import { MenuItem } from 'prosemirror-menu'
+import { exampleSetup, buildMenuItems } from 'prosemirror-example-setup'
+import { MenuItem, Dropdown } from 'prosemirror-menu'
 
 import {
   addColumnAfter,
@@ -30,7 +29,6 @@ import {
   deleteTable,
 } from '../src'
 import { tableEditing, columnResizing, tableNodes, fixTables } from '../src'
-import { tableOverlayPlugin } from '../src/tableOverlayPlugin'
 
 const schema = new Schema({
   nodes: baseSchema.spec.nodes.append(
@@ -53,25 +51,27 @@ const schema = new Schema({
   marks: baseSchema.spec.marks,
 })
 
+const menu = buildMenuItems(schema).fullMenu
 function item(label: string, cmd: (state: EditorState) => boolean) {
   return new MenuItem({ label, select: cmd, run: cmd })
 }
-
-const menu = [
-  [
-    item('列前', addColumnBefore),
-    item('列后', addColumnAfter),
-    item('删列', deleteColumn),
-    item('行前', addRowBefore),
-    item('行后', addRowAfter),
-    item('删行', deleteRow),
-    item('删表', deleteTable),
-    item('合并', mergeCells),
-    item('拆分', splitCell),
-    item('表头列', toggleHeaderColumn),
-    item('表头行', toggleHeaderRow),
-  ],
+const tableMenu = [
+  item('Insert column before', addColumnBefore),
+  item('Insert column after', addColumnAfter),
+  item('Delete column', deleteColumn),
+  item('Insert row before', addRowBefore),
+  item('Insert row after', addRowAfter),
+  item('Delete row', deleteRow),
+  item('Delete table', deleteTable),
+  item('Merge cells', mergeCells),
+  item('Split cell', splitCell),
+  item('Toggle header column', toggleHeaderColumn),
+  item('Toggle header row', toggleHeaderRow),
+  item('Toggle header cells', toggleHeaderCell),
+  item('Make cell green', setCellAttr('background', '#dfd')),
+  item('Make cell not-green', setCellAttr('background', null)),
 ]
+menu.splice(2, 0, [new Dropdown(tableMenu, { label: 'Table' })])
 
 const contentElement = document.querySelector('#content')
 if (!contentElement) {
@@ -84,8 +84,6 @@ let state = EditorState.create({
   plugins: [
     columnResizing(),
     tableEditing(),
-    // 添加我们的活动单元格插件
-    tableOverlayPlugin(),
     keymap({
       Tab: goToNextCell(1),
       'Shift-Tab': goToNextCell(-1),
