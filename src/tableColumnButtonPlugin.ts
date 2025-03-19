@@ -2,16 +2,18 @@ import { Plugin, PluginKey } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { cellAround } from './util'
 import { TableMap } from './tablemap'
+import { addColumnBefore, addColumnAfter, deleteColumn } from './commands'
 
 // 创建插件键
-export const columnButtonPluginKey = new PluginKey('tableColumnButton')
+export const tableColumnButtonPluginKey = new PluginKey('tableColumnButton')
 
 export function tableColumnButtonPlugin() {
   // 创建一个按钮元素缓存
   let buttonContainer: HTMLElement | null = null
+  let dropdown: HTMLElement | null = null
 
   return new Plugin({
-    key: columnButtonPluginKey,
+    key: tableColumnButtonPluginKey,
 
     state: {
       // 初始化插件状态
@@ -27,7 +29,7 @@ export function tableColumnButtonPlugin() {
         }
 
         // 从元数据中获取列信息
-        const meta = tr.getMeta(columnButtonPluginKey)
+        const meta = tr.getMeta(tableColumnButtonPluginKey)
         if (meta) {
           return meta
         }
@@ -58,16 +60,65 @@ export function tableColumnButtonPlugin() {
       button.style.borderRadius = '3px'
       button.style.cursor = 'pointer'
 
+      // 创建下拉菜单
+      dropdown = document.createElement('div')
+      dropdown.className = 'table-column-dropdown'
+      dropdown.style.position = 'absolute'
+      dropdown.style.left = '0'
+      dropdown.style.top = '20px'
+      dropdown.style.background = 'white'
+      dropdown.style.border = '1px solid #ddd'
+      dropdown.style.borderRadius = '3px'
+      dropdown.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)'
+      dropdown.style.zIndex = '6'
+      dropdown.style.display = 'none'
+      dropdown.style.minWidth = '120px'
+
+      // 添加菜单项
+      const menuItems = [
+        { text: '在左插入列', command: addColumnBefore },
+        { text: '在右插入列', command: addColumnAfter },
+        { text: '删除列', command: deleteColumn },
+      ]
+
+      menuItems.forEach((item) => {
+        const menuItem = document.createElement('div')
+        menuItem.textContent = item.text
+        menuItem.style.padding = '6px 8px'
+        menuItem.style.cursor = 'pointer'
+        menuItem.addEventListener('mouseover', () => {
+          menuItem.style.backgroundColor = '#f0f0f0'
+        })
+        menuItem.addEventListener('mouseout', () => {
+          menuItem.style.backgroundColor = ''
+        })
+        menuItem.addEventListener('click', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+
+          const state = tableColumnButtonPluginKey.getState(editorView.state)
+          if (state && state.hoveredColumn !== null) {
+            // 执行相应的命令
+            item.command(editorView.state, editorView.dispatch)
+            // 隐藏下拉菜单
+            if (dropdown) dropdown.style.display = 'none'
+            // 隐藏按钮
+            if (buttonContainer) buttonContainer.style.display = 'none'
+            // 聚焦回编辑器
+            editorView.focus()
+          }
+        })
+        dropdown?.appendChild(menuItem)
+      })
+
       // 按钮点击事件
       button.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
 
-        const state = columnButtonPluginKey.getState(editorView.state)
-        if (state && state.hoveredColumn !== null) {
-          // 这里可以添加按钮点击后的操作
-          console.log('列按钮被点击:', state.hoveredColumn)
-          // 例如：dispatch某个命令 - 这里只做了日志记录
+        // 切换下拉菜单显示状态
+        if (dropdown) {
+          dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none'
         }
       })
 
@@ -81,13 +132,13 @@ export function tableColumnButtonPlugin() {
         // 鼠标离开按钮区域
         if (buttonContainer) buttonContainer.dataset.hover = 'false'
 
-        // 检查编辑器是否有活动的单元格
-        const state = columnButtonPluginKey.getState(editorView.state)
+        // 检查编辑器是否有活动的列
+        const state = tableColumnButtonPluginKey.getState(editorView.state)
         if (!state || state.hoveredColumn === null) {
           // 如果没有活动列，隐藏按钮
           setTimeout(() => {
             // 再次检查，防止用户快速移回
-            if (buttonContainer && buttonContainer.dataset.hover !== 'true') {
+            if (buttonContainer && buttonContainer.dataset.hover !== 'true' && dropdown && dropdown.style.display === 'none') {
               buttonContainer.style.display = 'none'
             }
           }, 200)
@@ -95,6 +146,7 @@ export function tableColumnButtonPlugin() {
       })
 
       buttonContainer.appendChild(button)
+      buttonContainer.appendChild(dropdown)
 
       // 添加到编辑器容器
       const editorContainer = editorView.dom.parentNode
@@ -105,6 +157,13 @@ export function tableColumnButtonPlugin() {
         editorContainer.appendChild(buttonContainer)
       }
 
+      // 点击文档其他地方时隐藏下拉菜单
+      document.addEventListener('click', (e) => {
+        if (dropdown && dropdown.style.display === 'block' && buttonContainer && !buttonContainer.contains(e.target as Node)) {
+          dropdown.style.display = 'none'
+        }
+      })
+
       return {
         update(view) {
           updateButtonPosition(view)
@@ -114,6 +173,8 @@ export function tableColumnButtonPlugin() {
             buttonContainer.parentNode.removeChild(buttonContainer)
           }
           buttonContainer = null
+          dropdown = null
+          // document.removeEventListener('click', () => {})
         },
       }
     },
@@ -121,8 +182,8 @@ export function tableColumnButtonPlugin() {
     props: {
       handleDOMEvents: {
         mousemove(view, event) {
-          // 检查鼠标是否在按钮上
-          if (buttonContainer && event.target instanceof Node && buttonContainer.contains(event.target)) {
+          // 检查鼠标是否在按钮或下拉菜单上
+          if ((buttonContainer && event.target instanceof Node && buttonContainer.contains(event.target)) || (dropdown && dropdown.style.display === 'block')) {
             // 鼠标在按钮上，保持按钮显示
             return false
           }
@@ -134,7 +195,6 @@ export function tableColumnButtonPlugin() {
           // 查找该位置是否在单元格内
           const $cell = cellAround(view.state.doc.resolve(pos.pos))
           if (!$cell) {
-            // 不在单元格内，不处理
             return false
           }
 
@@ -149,13 +209,13 @@ export function tableColumnButtonPlugin() {
           const colIndex = cellIndex % map.width
 
           // 获取当前状态
-          const currentState = columnButtonPluginKey.getState(view.state)
+          const currentState = tableColumnButtonPluginKey.getState(view.state)
 
           // 只有当列索引变化时才更新状态，减少不必要的重渲染
           if (!currentState || currentState.hoveredColumn !== colIndex || currentState.tableStart !== tableStart) {
             // 更新插件状态
             view.dispatch(
-              view.state.tr.setMeta(columnButtonPluginKey, {
+              view.state.tr.setMeta(tableColumnButtonPluginKey, {
                 hoveredColumn: colIndex,
                 tableStart,
                 tableMap: map,
@@ -169,7 +229,6 @@ export function tableColumnButtonPlugin() {
           // 检查鼠标是否移动到按钮上
           const relatedTarget = event.relatedTarget
           if (buttonContainer && relatedTarget instanceof Node && (buttonContainer === relatedTarget || buttonContainer.contains(relatedTarget))) {
-            // 鼠标移动到按钮上，不隐藏按钮
             return false
           }
 
@@ -177,10 +236,10 @@ export function tableColumnButtonPlugin() {
           setTimeout(() => {
             // 再次检查鼠标位置，确保不是在按钮上
             const elementAtPointer = document.elementFromPoint(event.clientX, event.clientY)
-            if (buttonContainer && elementAtPointer && !buttonContainer.contains(elementAtPointer as Node)) {
+            if (buttonContainer && elementAtPointer && !buttonContainer.contains(elementAtPointer as Node) && dropdown && dropdown.style.display === 'none') {
               buttonContainer.style.display = 'none'
               view.dispatch(
-                view.state.tr.setMeta(columnButtonPluginKey, {
+                view.state.tr.setMeta(tableColumnButtonPluginKey, {
                   hoveredColumn: null,
                   tableStart: null,
                   tableMap: null,
@@ -198,9 +257,8 @@ export function tableColumnButtonPlugin() {
   function updateButtonPosition(view: EditorView) {
     if (!buttonContainer) return
 
-    const state = columnButtonPluginKey.getState(view.state)
+    const state = tableColumnButtonPluginKey.getState(view.state)
     if (!state || state.hoveredColumn === null || state.tableStart === null || !state.tableMap) {
-      // 不立即隐藏按钮，避免在列间移动时闪烁
       return
     }
 
@@ -242,7 +300,7 @@ export function tableColumnButtonPlugin() {
 
     // 设置按钮位置，使其水平居中于单元格，垂直位置在单元格上方
     buttonContainer.style.left = colRect.left - editorRect.left + (colRect.width - 26) / 2 + 'px'
-    buttonContainer.style.top = colRect.top - editorRect.top - 9 + 'px' // 16是按钮高度，4是额外间距
+    buttonContainer.style.top = colRect.top - editorRect.top - 16 - 4 + 'px' // 16是按钮高度，4是额外间距
     buttonContainer.style.display = 'block'
   }
 }
