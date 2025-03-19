@@ -3,6 +3,7 @@ import 'prosemirror-menu/style/menu.css'
 import 'prosemirror-example-setup/style/style.css'
 import 'prosemirror-gapcursor/style/gapcursor.css'
 import '../style/tables.css'
+import '../style/table-header-menu.css'
 
 import { EditorView } from 'prosemirror-view'
 import { EditorState } from 'prosemirror-state'
@@ -30,6 +31,7 @@ import {
 } from '../src'
 import { tableEditing, columnResizing, tableNodes, fixTables } from '../src'
 import { toggleStrongWithStars } from '../src/markdown-stars'
+import { tableHeaderMenuPlugin } from '../src/tableHeaderMenu'
 
 const schema = new Schema({
   nodes: baseSchema.spec.nodes.append(
@@ -117,6 +119,7 @@ let state = EditorState.create({
   plugins: [
     columnResizing(),
     tableEditing(),
+    tableHeaderMenuPlugin(),
     keymap({
       Tab: goToNextCell(1),
       'Shift-Tab': goToNextCell(-1),

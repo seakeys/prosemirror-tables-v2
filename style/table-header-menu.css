@@ -1,0 +1,45 @@
+/* 菜单按钮 */
+.table-header-menu {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 10;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  height: 24px;
+  width: 24px;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  pointer-events: auto; /* 允许按钮接收事件 */
+}
+
+/* 下拉菜单 */
+.table-header-dropdown {
+  position: absolute;
+  top: 26px;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  display: none;
+  min-width: 120px;
+  z-index: 11;
+  pointer-events: auto; /* 允许下拉菜单接收事件 */
+}
+
+/* 菜单项 */
+.table-header-menu-item {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.table-header-menu-item:hover {
+  background-color: #f0f0f0;
+}
