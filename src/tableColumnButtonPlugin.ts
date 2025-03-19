@@ -306,7 +306,6 @@ export function tableColumnButtonPlugin() {
 
     // 找到对应列的单元格
     let colElement: HTMLElement | null = null
-    let cellIndex = 0
     let colSpanSum = 0
 
     for (let i = 0; i < cells.length; i++) {
@@ -315,7 +314,6 @@ export function tableColumnButtonPlugin() {
 
       if (colSpanSum <= state.hoveredColumn && state.hoveredColumn < colSpanSum + colspan) {
         colElement = cell
-        cellIndex = i
         break
       }
 
