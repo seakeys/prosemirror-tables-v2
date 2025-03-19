@@ -1,4 +1,4 @@
-import { Plugin, PluginKey } from 'prosemirror-state'
+import { Plugin, PluginKey, EditorState, Transaction } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { cellAround } from './util'
 import { TableMap } from './tablemap'
@@ -75,11 +75,18 @@ export function tableColumnButtonPlugin() {
       dropdown.style.display = 'none'
       dropdown.style.minWidth = '120px'
 
+      // 定义菜单项接口类型
+      interface ColumnMenuItem {
+        text: string
+        command: (state: EditorState, dispatch?: (tr: Transaction) => void) => boolean
+        selectAfter: ((state: { hoveredColumn: number }) => number) | null
+      }
+
       // 添加菜单项
-      const menuItems = [
-        { text: '在左插入列', command: addColumnBefore },
-        { text: '在右插入列', command: addColumnAfter },
-        { text: '删除列', command: deleteColumn },
+      const menuItems: ColumnMenuItem[] = [
+        { text: '在左插入列', command: addColumnBefore, selectAfter: (state) => state.hoveredColumn },
+        { text: '在右插入列', command: addColumnAfter, selectAfter: (state) => state.hoveredColumn + 1 },
+        { text: '删除列', command: deleteColumn, selectAfter: null },
       ]
 
       menuItems.forEach((item) => {
@@ -104,6 +111,27 @@ export function tableColumnButtonPlugin() {
 
             // 执行相应的命令
             item.command(editorView.state, editorView.dispatch)
+
+            // 如果需要选中插入后的列
+            if (item.selectAfter !== null) {
+              // 获取更新后的表格状态
+              setTimeout(() => {
+                const newState = editorView.state
+                const $cell = cellAround(newState.selection.$head)
+                if ($cell) {
+                  const table = $cell.node(-1)
+                  const tableStart = $cell.start(-1)
+                  const map = TableMap.get(table)
+
+                  // 计算要选中的列索引
+                  if (item.selectAfter) {
+                    const colToSelect = item.selectAfter(state)
+                    // 选中新列
+                    selectColumn(editorView, colToSelect, tableStart, map)
+                  }
+                }
+              }, 0)
+            }
 
             // 隐藏下拉菜单
             if (dropdown) dropdown.style.display = 'none'

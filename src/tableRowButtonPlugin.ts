@@ -1,4 +1,4 @@
-import { Plugin, PluginKey } from 'prosemirror-state'
+import { EditorState, Plugin, PluginKey, Transaction } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { cellAround } from './util'
 import { TableMap } from './tablemap'
@@ -76,10 +76,16 @@ export function tableRowButtonPlugin() {
       dropdown.style.minWidth = '120px'
 
       // 添加菜单项
-      const menuItems = [
-        { text: '在前插入行', command: addRowBefore },
-        { text: '在后插入行', command: addRowAfter },
-        { text: '删除行', command: deleteRow },
+      interface RowMenuItem {
+        text: string
+        command: (state: EditorState, dispatch?: (tr: Transaction) => void) => boolean
+        selectAfter: ((state: { hoveredRow: number }) => number) | null
+      }
+
+      const menuItems: RowMenuItem[] = [
+        { text: '在前插入行', command: addRowBefore, selectAfter: (state) => state.hoveredRow },
+        { text: '在后插入行', command: addRowAfter, selectAfter: (state) => state.hoveredRow + 1 },
+        { text: '删除行', command: deleteRow, selectAfter: null },
       ]
 
       menuItems.forEach((item) => {
@@ -104,6 +110,27 @@ export function tableRowButtonPlugin() {
 
             // 执行相应的命令
             item.command(editorView.state, editorView.dispatch)
+
+            // 如果需要选中插入后的行
+            if (item.selectAfter !== null) {
+              // 获取更新后的表格状态
+              setTimeout(() => {
+                const newState = editorView.state
+                const $cell = cellAround(newState.selection.$head)
+                if ($cell) {
+                  const table = $cell.node(-1)
+                  const tableStart = $cell.start(-1)
+                  const map = TableMap.get(table)
+
+                  // 计算要选中的行索引
+                  if (item.selectAfter) {
+                    const rowToSelect = item.selectAfter(state)
+                    // 选中新行
+                    selectRow(editorView, rowToSelect, tableStart, map)
+                  }
+                }
+              }, 0)
+            }
 
             // 隐藏下拉菜单
             if (dropdown) dropdown.style.display = 'none'
