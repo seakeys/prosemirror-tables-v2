@@ -3,6 +3,7 @@ import { EditorView } from 'prosemirror-view'
 import { cellAround } from './util'
 import { TableMap } from './tablemap'
 import { addColumnBefore, addColumnAfter, deleteColumn } from './commands'
+import { CellSelection } from './cellselection'
 
 // 创建插件键
 export const tableColumnButtonPluginKey = new PluginKey('tableColumnButton')
@@ -97,13 +98,19 @@ export function tableColumnButtonPlugin() {
           e.stopPropagation()
 
           const state = tableColumnButtonPluginKey.getState(editorView.state)
-          if (state && state.hoveredColumn !== null) {
+          if (state && state.hoveredColumn !== null && state.tableStart !== null && state.tableMap) {
+            // 在执行命令前，先选中当前列
+            selectColumn(editorView, state.hoveredColumn, state.tableStart, state.tableMap)
+
             // 执行相应的命令
             item.command(editorView.state, editorView.dispatch)
+
             // 隐藏下拉菜单
             if (dropdown) dropdown.style.display = 'none'
+
             // 隐藏按钮
             if (buttonContainer) buttonContainer.style.display = 'none'
+
             // 聚焦回编辑器
             editorView.focus()
           }
@@ -174,7 +181,6 @@ export function tableColumnButtonPlugin() {
           }
           buttonContainer = null
           dropdown = null
-          // document.removeEventListener('click', () => {})
         },
       }
     },
@@ -252,6 +258,29 @@ export function tableColumnButtonPlugin() {
       },
     },
   })
+
+  // 选择整列的辅助函数
+  function selectColumn(view: EditorView, colIndex: number, tableStart: number, map: TableMap) {
+    try {
+      // 找到第一行和最后一行的单元格位置
+      const topCellPos = map.map[colIndex]
+      const bottomCellPos = map.map[(map.height - 1) * map.width + colIndex]
+
+      // 创建单元格选择
+      const $anchor = view.state.doc.resolve(tableStart + topCellPos)
+      const $head = view.state.doc.resolve(tableStart + bottomCellPos)
+
+      if ($anchor && $head) {
+        // 创建列选择
+        const cellSelection = new CellSelection($anchor, $head)
+
+        // 应用选择
+        view.dispatch(view.state.tr.setSelection(cellSelection))
+      }
+    } catch (error) {
+      console.error('选择列时出错:', error)
+    }
+  }
 
   // 更新按钮位置的辅助函数
   function updateButtonPosition(view: EditorView) {
