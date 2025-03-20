@@ -177,8 +177,6 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
         return handle
       }
 
-      // TODO: 实现拖拽调整大小的功能
-
       return {
         update(view) {
           updateOverlay(view)
