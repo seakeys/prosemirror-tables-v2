@@ -4,7 +4,7 @@ import { EditorView } from 'prosemirror-view'
 import { cellAround } from './util'
 import { CellSelection } from './cellselection'
 
-// 创建插件键以标识我们的插件
+// 创建插件键
 export const tableOverlayPluginKey = new PluginKey('tableOverlay')
 
 // 定义单元格位置和尺寸信息
@@ -22,29 +22,35 @@ interface TableOverlayState {
   selectionRects: CellRect[] // 存储选择的多个单元格
 }
 
-// 定义偏移配置
-interface OffsetConfig {
-  horizontal: number
-  vertical: number
-  borderWidth: number
+// 默认配置
+interface OverlayConfig {
+  selectionBorderColor: string
+  selectionBorderWidth: number
+  handleSize: number
+  handleBorderColor: string
+  handleBackgroundColor: string
 }
 
 /**
- * 创建表格覆盖层插件
- * 支持单击高亮单元格和按住左键框选多个单元格
+ * 创建表格选择覆盖层插件
  */
-export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
+export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
   // 默认配置
-  const config: OffsetConfig = {
-    horizontal: -1, // 水平方向的偏移量
-    vertical: -2, // 垂直方向的偏移量
-    borderWidth: 2, // 边框宽度
+  const config: OverlayConfig = {
+    selectionBorderColor: '#3E9DFE',
+    selectionBorderWidth: 2,
+    handleSize: 4,
+    handleBorderColor: '#3E9DFE',
+    handleBackgroundColor: 'white',
     ...options,
   }
 
-  // 用于存储覆盖层DOM元素的引用
+  // DOM元素引用
   let overlayContainer: HTMLElement | null = null
-  let cellOverlay: HTMLElement | null = null
+  let selectionBackgroundOverlay: HTMLElement | null = null
+  let selectionBorderOverlay: HTMLElement | null = null
+  let topLeftHandle: HTMLElement | null = null
+  let bottomRightHandle: HTMLElement | null = null
 
   return new Plugin<TableOverlayState>({
     key: tableOverlayPluginKey,
@@ -57,7 +63,7 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
 
       // 应用状态变更
       apply(tr, prev) {
-        // 如果是我们插件的元数据更新
+        // 检查插件的元数据更新
         const overlayMeta = tr.getMeta(tableOverlayPluginKey)
         if (overlayMeta !== undefined) {
           return overlayMeta
@@ -72,11 +78,11 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
         if (tr.selectionSet) {
           const selection = tr.selection
           if (selection instanceof CellSelection) {
-            // 当出现CellSelection时，清除activeCellRect
-            return {
-              activeCellRect: null,
-              selectionRects: [],
-            }
+            // 当出现CellSelection时，保持状态不变，将在update中处理
+            return prev
+          } else {
+            // 如果不是CellSelection，清除状态
+            return { activeCellRect: null, selectionRects: [] }
           }
         }
 
@@ -87,33 +93,88 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
     view(editorView) {
       // 创建覆盖层容器
       overlayContainer = document.createElement('div')
+      overlayContainer.className = 'table-selection-overlay'
       overlayContainer.style.position = 'absolute'
       overlayContainer.style.top = '0'
       overlayContainer.style.left = '0'
-      overlayContainer.style.pointerEvents = 'none' // 避免干扰用户操作
-      overlayContainer.className = 'table-overlay-container'
+      overlayContainer.style.right = '0'
+      overlayContainer.style.bottom = '0'
+      overlayContainer.style.pointerEvents = 'none'
+      overlayContainer.style.zIndex = '2'
 
-      // 创建单元格覆盖层（用于单击和框选）
-      cellOverlay = document.createElement('div')
-      cellOverlay.className = 'table-cell-overlay'
-      cellOverlay.style.position = 'absolute'
-      cellOverlay.style.zIndex = '3'
-      cellOverlay.style.boxSizing = 'content-box'
-      cellOverlay.style.border = `${config.borderWidth}px solid rgb(255, 50, 50)` // 红色边框
-      cellOverlay.style.background = 'rgba(255, 50, 50, 0.1)' // 淡红色背景
-      cellOverlay.style.display = 'none' // 初始隐藏
+      // 创建背景覆盖层
+      selectionBackgroundOverlay = document.createElement('div')
+      selectionBackgroundOverlay.style.position = 'absolute'
+      selectionBackgroundOverlay.style.left = '0px'
+      selectionBackgroundOverlay.style.top = '0px'
+      selectionBackgroundOverlay.style.width = '0px'
+      selectionBackgroundOverlay.style.height = '0px'
+      selectionBackgroundOverlay.style.zIndex = '2'
+      selectionBackgroundOverlay.style.borderRadius = '2px'
+      selectionBackgroundOverlay.style.display = 'none'
 
-      overlayContainer.appendChild(cellOverlay)
+      // 创建带边框和手柄的覆盖层
+      selectionBorderOverlay = document.createElement('div')
+      selectionBorderOverlay.style.position = 'absolute'
+      selectionBorderOverlay.style.left = '0px'
+      selectionBorderOverlay.style.top = '0px'
+      selectionBorderOverlay.style.width = '0px'
+      selectionBorderOverlay.style.height = '0px'
+      selectionBorderOverlay.style.border = `${config.selectionBorderWidth}px solid ${config.selectionBorderColor}`
+      selectionBorderOverlay.style.borderRadius = '2px'
+      selectionBorderOverlay.style.zIndex = '3'
+      selectionBorderOverlay.style.display = 'none'
 
-      // 将覆盖层容器添加到编辑器外部容器中
+      // 创建左上角手柄
+      topLeftHandle = createHandle('nwse-resize')
+      topLeftHandle.style.top = `-${config.handleSize / 2}px`
+      topLeftHandle.style.left = `-${config.handleSize / 2}px`
+
+      // 创建右下角手柄
+      bottomRightHandle = createHandle('nwse-resize')
+      bottomRightHandle.style.bottom = `-${config.handleSize / 2}px`
+      bottomRightHandle.style.right = `-${config.handleSize / 2}px`
+
+      // 将手柄添加到边框覆盖层
+      selectionBorderOverlay.appendChild(topLeftHandle)
+      selectionBorderOverlay.appendChild(bottomRightHandle)
+
+      // 将覆盖层添加到容器
+      overlayContainer.appendChild(selectionBackgroundOverlay)
+      overlayContainer.appendChild(selectionBorderOverlay)
+
+      // 将覆盖层容器添加到编辑器
       const editorContainer = editorView.dom.parentNode
       if (editorContainer && editorContainer instanceof HTMLElement) {
-        // 确保编辑器容器有定位样式，以便绝对定位正常工作
+        // 确保编辑器容器有定位样式
         if (getComputedStyle(editorContainer).position === 'static') {
           editorContainer.style.position = 'relative'
         }
         editorContainer.appendChild(overlayContainer)
       }
+
+      // 创建手柄的辅助函数
+      function createHandle(cursor: string): HTMLElement {
+        const handle = document.createElement('div')
+        handle.style.position = 'absolute'
+        handle.style.width = `${config.handleSize}px`
+        handle.style.height = `${config.handleSize}px`
+        handle.style.background = 'transparent'
+        handle.style.pointerEvents = 'auto'
+        handle.style.cursor = cursor
+        handle.style.zIndex = '10'
+
+        const handleInner = document.createElement('div')
+        handleInner.style.width = `${config.handleSize}px`
+        handleInner.style.height = `${config.handleSize}px`
+        handleInner.style.border = `2px solid ${config.handleBorderColor}`
+        handleInner.style.background = config.handleBackgroundColor
+
+        handle.appendChild(handleInner)
+        return handle
+      }
+
+      // TODO: 实现拖拽调整大小的功能
 
       return {
         update(view) {
@@ -125,7 +186,10 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
             overlayContainer.parentNode.removeChild(overlayContainer)
           }
           overlayContainer = null
-          cellOverlay = null
+          selectionBackgroundOverlay = null
+          selectionBorderOverlay = null
+          topLeftHandle = null
+          bottomRightHandle = null
         },
       }
     },
@@ -133,7 +197,7 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
     props: {
       // 处理鼠标点击事件
       handleClick(view, pos, event) {
-        // 检查是否是鼠标左键点击
+        // 仅处理鼠标左键点击
         if (event.button !== 0) return false
 
         // 查找点击位置所在的单元格
@@ -174,39 +238,55 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
 
   // 更新覆盖层位置和可见性
   function updateOverlay(view: EditorView) {
-    if (!cellOverlay) return
+    if (!selectionBackgroundOverlay || !selectionBorderOverlay) return
 
-    const state = tableOverlayPluginKey.getState(view.state)
-    if (!state) return
-
-    // 处理单元格选择 - 检查当前选择是否是CellSelection
     const selection = view.state.selection
+
+    // 如果是单元格选择
     if (selection instanceof CellSelection) {
-      // 获取选择范围的所有单元格
       const selRect = getSelectionRect(view, selection)
       if (selRect) {
-        // 显示选择区域
-        cellOverlay.style.left = `${selRect.left + config.horizontal}px`
-        cellOverlay.style.top = `${selRect.top + config.vertical}px`
-        cellOverlay.style.width = `${selRect.width}px`
-        cellOverlay.style.height = `${selRect.height}px`
-        cellOverlay.style.display = 'block'
+        // 更新背景覆盖层
+        selectionBackgroundOverlay.style.left = `${selRect.left}px`
+        selectionBackgroundOverlay.style.top = `${selRect.top}px`
+        selectionBackgroundOverlay.style.width = `${selRect.width}px`
+        selectionBackgroundOverlay.style.height = `${selRect.height}px`
+        selectionBackgroundOverlay.style.display = 'block'
+
+        // 更新边框覆盖层和手柄
+        selectionBorderOverlay.style.left = `${selRect.left}px`
+        selectionBorderOverlay.style.top = `${selRect.top}px`
+        selectionBorderOverlay.style.width = `${selRect.width}px`
+        selectionBorderOverlay.style.height = `${selRect.height}px`
+        selectionBorderOverlay.style.display = 'block'
       } else {
-        cellOverlay.style.display = 'none'
+        selectionBackgroundOverlay.style.display = 'none'
+        selectionBorderOverlay.style.display = 'none'
       }
-    }
-    // 如果不是CellSelection但有活动单元格，则显示单个单元格高亮
-    else if (state.activeCellRect) {
-      const rect = state.activeCellRect
-      cellOverlay.style.left = `${rect.left + config.horizontal}px`
-      cellOverlay.style.top = `${rect.top + config.vertical}px`
-      cellOverlay.style.width = `${rect.width}px`
-      cellOverlay.style.height = `${rect.height}px`
-      cellOverlay.style.display = 'block'
-    }
-    // 如果既不是CellSelection也没有活动单元格，则隐藏覆盖层
-    else {
-      cellOverlay.style.display = 'none'
+    } else {
+      // 如果不是单元格选择
+      const state = tableOverlayPluginKey.getState(view.state)
+
+      if (state && state.activeCellRect) {
+        const rect = state.activeCellRect
+
+        // 更新背景覆盖层
+        selectionBackgroundOverlay.style.left = `${rect.left}px`
+        selectionBackgroundOverlay.style.top = `${rect.top}px`
+        selectionBackgroundOverlay.style.width = `${rect.width}px`
+        selectionBackgroundOverlay.style.height = `${rect.height}px`
+        selectionBackgroundOverlay.style.display = 'block'
+
+        // 更新边框覆盖层和手柄
+        selectionBorderOverlay.style.left = `${rect.left}px`
+        selectionBorderOverlay.style.top = `${rect.top}px`
+        selectionBorderOverlay.style.width = `${rect.width}px`
+        selectionBorderOverlay.style.height = `${rect.height}px`
+        selectionBorderOverlay.style.display = 'block'
+      } else {
+        selectionBackgroundOverlay.style.display = 'none'
+        selectionBorderOverlay.style.display = 'none'
+      }
     }
   }
 
@@ -255,12 +335,7 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
       const right = Math.max(anchorRect.right, headRect.right) - editorRect.left
       const bottom = Math.max(anchorRect.bottom, headRect.bottom) - editorRect.top
 
-      return {
-        left,
-        top,
-        width: right - left,
-        height: bottom - top,
-      }
+      return { left, top, width: right - left, height: bottom - top }
     } catch (e) {
       console.error('Error getting selection rect:', e)
       return null
