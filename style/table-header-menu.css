@@ -22,7 +22,7 @@
 /* 下拉菜单 */
 .table-header-dropdown {
   position: absolute;
-  top: 26px;
+  top: 0;
   right: 0;
   background-color: white;
   border: 1px solid #ccc;
