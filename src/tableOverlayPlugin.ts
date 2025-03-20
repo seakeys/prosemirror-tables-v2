@@ -1,6 +1,6 @@
-// tableOverlayPlugin.ts - 垂直方向调整版
+// tableOverlayPlugin.ts
 import { Plugin, PluginKey } from 'prosemirror-state'
-import { Decoration, DecorationSet, EditorView } from 'prosemirror-view'
+import { EditorView } from 'prosemirror-view'
 import { cellAround } from './util'
 
 // 创建插件键以标识我们的插件
@@ -35,7 +35,7 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
   // 默认配置
   const config: OffsetConfig = {
     horizontal: -1, // 水平方向的偏移量
-    vertical: 25, // 垂直方向的偏移量（增加为-2）
+    vertical: -2, // 垂直方向的偏移量（增加为-2）
     borderWidth: 2, // 边框宽度
     ...options,
   }
@@ -105,7 +105,7 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
       }
 
       return {
-        update(view, prevState) {
+        update(view) {
           updateOverlay(view)
         },
         destroy() {
@@ -121,7 +121,7 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
 
     props: {
       // 处理鼠标点击事件
-      handleClick(view, pos, event) {
+      handleClick(view, pos) {
         // 查找点击位置所在的单元格
         const $cell = cellAround(view.state.doc.resolve(pos))
 
@@ -159,7 +159,6 @@ export function tableOverlayPlugin(options: Partial<OffsetConfig> = {}) {
     }
 
     const rect = state.activeCellRect
-    console.log(rect)
 
     // 设置覆盖层位置和尺寸，使用不同的水平和垂直偏移
     cellOverlay.style.left = `${rect.left + config.horizontal}px`

@@ -16,6 +16,7 @@ import { tableEditing, columnResizing, tableNodes, fixTables } from '../src'
 import { tableHeaderMenuPlugin } from '../src/tableHeaderMenu'
 import { tableRowButtonPlugin } from '../src/tableRowButtonPlugin'
 import { tableColumnButtonPlugin } from '../src/tableColumnButtonPlugin'
+import { tableOverlayPlugin } from '../src/tableOverlayPlugin'
 
 const schema = new Schema({
   nodes: baseSchema.spec.nodes.append(
@@ -50,6 +51,7 @@ let state = EditorState.create({
     tableHeaderMenuPlugin(),
     tableRowButtonPlugin(),
     tableColumnButtonPlugin(),
+    tableOverlayPlugin(),
     keymap({
       Tab: goToNextCell(1),
       'Shift-Tab': goToNextCell(-1),
