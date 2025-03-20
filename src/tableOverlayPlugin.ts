@@ -39,7 +39,7 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
   const config: OverlayConfig = {
     selectionBorderColor: '#3E9DFE',
     selectionBorderWidth: 2,
-    handleSize: 4,
+    handleSize: 8,
     handleBorderColor: '#3E9DFE',
     handleBackgroundColor: 'white',
     ...options,
@@ -124,6 +124,7 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
       selectionBorderOverlay.style.borderRadius = '2px'
       selectionBorderOverlay.style.zIndex = '3'
       selectionBorderOverlay.style.display = 'none'
+      selectionBorderOverlay.style.boxSizing = 'border-box'
 
       // 创建左上角手柄
       topLeftHandle = createHandle('nwse-resize')
@@ -169,6 +170,8 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
         handleInner.style.height = `${config.handleSize}px`
         handleInner.style.border = `2px solid ${config.handleBorderColor}`
         handleInner.style.background = config.handleBackgroundColor
+        handleInner.style.borderRadius = '50%'
+        handleInner.style.boxSizing = 'border-box'
 
         handle.appendChild(handleInner)
         return handle
