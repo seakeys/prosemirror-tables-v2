@@ -12,6 +12,9 @@ export function tableRowButtonPlugin() {
   // 创建一个按钮元素缓存
   let buttonContainer: HTMLElement | null = null
   let dropdown: HTMLElement | null = null
+  let dropdownContainer: HTMLElement | null = null
+  // 添加遮罩层
+  let overlay: HTMLElement | null = null
 
   return new Plugin({
     key: tableRowButtonPluginKey,
@@ -61,18 +64,47 @@ export function tableRowButtonPlugin() {
       button.style.borderRadius = '3px'
       button.style.cursor = 'pointer'
 
+      // 创建下拉菜单容器（新增的父级元素）
+      dropdownContainer = document.createElement('div')
+      dropdownContainer.className = 'table-row-dropdown-container'
+      dropdownContainer.style.position = 'absolute'
+      dropdownContainer.style.left = '20px'
+      dropdownContainer.style.top = '0'
+      dropdownContainer.style.display = 'none'
+
+      // 创建遮罩层
+      overlay = document.createElement('div')
+      overlay.className = 'table-row-overlay'
+      overlay.style.position = 'fixed'
+      overlay.style.top = '0'
+      overlay.style.left = '0'
+      overlay.style.width = '100vw'
+      overlay.style.height = '100vh'
+      overlay.style.background = 'transparent'
+      overlay.style.zIndex = '5'
+      overlay.style.display = 'block'
+
+      // 为遮罩层添加点击事件，关闭下拉菜单
+      overlay.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // 隐藏整个下拉菜单容器
+        if (dropdownContainer) dropdownContainer.style.display = 'none'
+      })
+
       // 创建下拉菜单
       dropdown = document.createElement('div')
       dropdown.className = 'table-row-dropdown'
       dropdown.style.position = 'absolute'
-      dropdown.style.left = '20px'
+      dropdown.style.left = '0'
       dropdown.style.top = '0'
       dropdown.style.background = 'white'
       dropdown.style.border = '1px solid #ddd'
       dropdown.style.borderRadius = '3px'
       dropdown.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)'
       dropdown.style.zIndex = '6'
-      dropdown.style.display = 'none'
+      dropdown.style.display = 'block'
       dropdown.style.minWidth = '120px'
 
       // 添加菜单项
@@ -132,8 +164,8 @@ export function tableRowButtonPlugin() {
               }, 0)
             }
 
-            // 隐藏下拉菜单
-            if (dropdown) dropdown.style.display = 'none'
+            // 隐藏下拉菜单容器
+            if (dropdownContainer) dropdownContainer.style.display = 'none'
 
             // 隐藏按钮
             if (buttonContainer) buttonContainer.style.display = 'none'
@@ -145,14 +177,22 @@ export function tableRowButtonPlugin() {
         dropdown?.appendChild(menuItem)
       })
 
+      // 将下拉菜单和遮罩层添加到下拉菜单容器中
+      dropdownContainer.appendChild(overlay)
+      dropdownContainer.appendChild(dropdown)
+
+      buttonContainer.appendChild(button)
+      buttonContainer.appendChild(dropdownContainer)
+
       // 按钮点击事件
       button.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
 
-        // 切换下拉菜单显示状态
-        if (dropdown) {
-          dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none'
+        // 切换下拉菜单容器的显示状态
+        if (dropdownContainer) {
+          const isVisible = dropdownContainer.style.display !== 'none'
+          dropdownContainer.style.display = isVisible ? 'none' : 'block'
         }
       })
 
@@ -172,15 +212,12 @@ export function tableRowButtonPlugin() {
           // 如果没有活动单元格，隐藏按钮
           setTimeout(() => {
             // 再次检查，防止用户快速移回
-            if (buttonContainer && buttonContainer.dataset.hover !== 'true' && dropdown && dropdown.style.display === 'none') {
+            if (buttonContainer && buttonContainer.dataset.hover !== 'true' && dropdownContainer && dropdownContainer.style.display === 'none') {
               buttonContainer.style.display = 'none'
             }
           }, 200)
         }
       })
-
-      buttonContainer.appendChild(button)
-      buttonContainer.appendChild(dropdown)
 
       // 添加到编辑器容器
       const editorContainer = editorView.dom.parentNode
@@ -193,8 +230,8 @@ export function tableRowButtonPlugin() {
 
       // 点击文档其他地方时隐藏下拉菜单
       document.addEventListener('click', (e) => {
-        if (dropdown && dropdown.style.display === 'block' && buttonContainer && !buttonContainer.contains(e.target as Node)) {
-          dropdown.style.display = 'none'
+        if (dropdownContainer && dropdownContainer.style.display === 'block' && buttonContainer && !buttonContainer.contains(e.target as Node)) {
+          dropdownContainer.style.display = 'none'
         }
       })
 
@@ -208,6 +245,8 @@ export function tableRowButtonPlugin() {
           }
           buttonContainer = null
           dropdown = null
+          dropdownContainer = null
+          overlay = null
         },
       }
     },
@@ -216,7 +255,7 @@ export function tableRowButtonPlugin() {
       handleDOMEvents: {
         mousemove(view, event) {
           // 检查鼠标是否在按钮或下拉菜单上
-          if ((buttonContainer && event.target instanceof Node && buttonContainer.contains(event.target)) || (dropdown && dropdown.style.display === 'block')) {
+          if ((buttonContainer && event.target instanceof Node && buttonContainer.contains(event.target)) || (dropdownContainer && dropdownContainer.style.display === 'block')) {
             // 鼠标在按钮上，保持按钮显示
             return false
           }
@@ -267,7 +306,7 @@ export function tableRowButtonPlugin() {
           setTimeout(() => {
             // 再次检查鼠标位置，确保不是在按钮上
             const elementAtPointer = document.elementFromPoint(event.clientX, event.clientY)
-            if (buttonContainer && elementAtPointer && !buttonContainer.contains(elementAtPointer as Node) && dropdown && dropdown.style.display === 'none') {
+            if (buttonContainer && elementAtPointer && !buttonContainer.contains(elementAtPointer as Node) && dropdownContainer && dropdownContainer.style.display === 'none') {
               buttonContainer.style.display = 'none'
               view.dispatch(
                 view.state.tr.setMeta(tableRowButtonPluginKey, {
