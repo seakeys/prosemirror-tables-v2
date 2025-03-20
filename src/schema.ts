@@ -1,8 +1,15 @@
-// Helper for creating a schema that supports tables.
+// 用于创建支持表格的模式的辅助函数
 
 import { AttributeSpec, Attrs, Node, NodeSpec, NodeType, Schema } from 'prosemirror-model'
 import { CellAttrs, MutableAttrs } from './util'
 
+/**
+ * 从DOM元素获取单元格属性
+ *
+ * @param dom - HTML元素或字符串
+ * @param extraAttrs - 额外的属性
+ * @returns 单元格属性对象
+ */
 function getCellAttrs(dom: HTMLElement | string, extraAttrs: Attrs): Attrs {
   if (typeof dom === 'string') {
     return {}
@@ -26,6 +33,13 @@ function getCellAttrs(dom: HTMLElement | string, extraAttrs: Attrs): Attrs {
   return result
 }
 
+/**
+ * 设置单元格DOM属性
+ *
+ * @param node - 节点对象
+ * @param extraAttrs - 额外的属性
+ * @returns 处理后的属性对象
+ */
 function setCellAttrs(node: Node, extraAttrs: Attrs): Attrs {
   const attrs: MutableAttrs = {}
   if (node.attrs.colspan != 1) attrs.colspan = node.attrs.colspan
@@ -39,69 +53,69 @@ function setCellAttrs(node: Node, extraAttrs: Attrs): Attrs {
 }
 
 /**
+ * 从DOM获取值的函数类型
  * @public
  */
 export type getFromDOM = (dom: HTMLElement) => unknown
 
 /**
+ * 设置DOM属性的函数类型
  * @public
  */
 export type setDOMAttr = (value: unknown, attrs: MutableAttrs) => void
 
 /**
+ * 单元格属性接口
  * @public
  */
 export interface CellAttributes {
   /**
-   * The attribute's default value.
+   * 属性的默认值
    */
   default: unknown
 
   /**
-   * A function to read the attribute's value from a DOM node.
+   * 从DOM节点读取属性值的函数
    */
   getFromDOM?: getFromDOM
 
   /**
-   * A function to add the attribute's value to an attribute
-   * object that's used to render the cell's DOM.
+   * 将属性值添加到用于渲染单元格DOM的属性对象的函数
    */
   setDOMAttr?: setDOMAttr
 }
 
 /**
+ * 表格节点选项接口
  * @public
  */
 export interface TableNodesOptions {
   /**
-   * A group name (something like `"block"`) to add to the table
-   * node type.
+   * 添加到表格节点类型的组名(如 "block")
    */
   tableGroup?: string
 
   /**
-   * The content expression for table cells.
+   * 表格单元格的内容表达式
    */
   cellContent: string
 
   /**
-   * Additional attributes to add to cells. Maps attribute names to
-   * objects with the following properties:
+   * 添加到单元格的额外属性。将属性名映射到具有以下属性的对象
    */
   cellAttributes: { [key: string]: CellAttributes }
 }
 
 /**
+ * 表格节点类型记录
  * @public
  */
 export type TableNodes = Record<'table' | 'table_row' | 'table_cell' | 'table_header', NodeSpec>
 
 /**
- * This function creates a set of [node
- * specs](http://prosemirror.net/docs/ref/#model.SchemaSpec.nodes) for
- * `table`, `table_row`, and `table_cell` nodes types as used by this
- * module. The result can then be added to the set of nodes when
- * creating a schema.
+ * 此函数创建一组节点规范(http://prosemirror.net/docs/ref/#model.SchemaSpec.nodes)，
+ * 用于本模块使用的 `table`、`table_row` 和 `table_cell` 节点类型。
+ * 创建模式时，可以将结果添加到节点集中。
  *
  * @public
  */
@@ -157,11 +171,18 @@ export function tableNodes(options: TableNodesOptions): TableNodes {
 }
 
 /**
+ * 表格角色类型
  * @public
  */
 export type TableRole = 'table' | 'row' | 'cell' | 'header_cell'
 
 /**
+ * 获取表格节点类型
+ *
+ * 此函数从给定的Schema中获取所有的表格相关节点类型，并按照它们的tableRole分类返回
+ *
+ * @param schema - ProseMirror模式对象
+ * @returns 按tableRole分类的节点类型记录
  * @public
  */
 export function tableNodeTypes(schema: Schema): Record<TableRole, NodeType> {

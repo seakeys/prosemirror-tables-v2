@@ -1,4 +1,4 @@
-// This file defines a number of table-related commands.
+// 此文件定义了许多表格相关的命令。
 
 import { Fragment, Node, NodeType, ResolvedPos, Slice } from 'prosemirror-model'
 import { Command, EditorState, TextSelection, Transaction } from 'prosemirror-state'
@@ -19,9 +19,8 @@ export type TableRect = Rect & {
 }
 
 /**
- * Helper to get the selected rectangle in a table, if any. Adds table
- * map, table node, and table start offset to the object for
- * convenience.
+ * 用于获取表格中选中的矩形区域（如果有）。
+ * 为了方便，在返回的对象中添加了表格映射、表格节点和表格起始偏移量。
  *
  * @public
  */
@@ -36,7 +35,7 @@ export function selectedRect(state: EditorState): TableRect {
 }
 
 /**
- * Add a column at the given position in a table.
+ * 在表格的指定位置添加一列。
  *
  * @public
  */
@@ -48,12 +47,12 @@ export function addColumn(tr: Transaction, { map, tableStart, table }: TableRect
 
   for (let row = 0; row < map.height; row++) {
     const index = row * map.width + col
-    // If this position falls inside a col-spanning cell
+    // 如果这个位置在一个跨列单元格内
     if (col > 0 && col < map.width && map.map[index - 1] == map.map[index]) {
       const pos = map.map[index]
       const cell = table.nodeAt(pos)!
       tr.setNodeMarkup(tr.mapping.map(tableStart + pos), null, addColSpan(cell.attrs as CellAttrs, col - map.colCount(pos)))
-      // Skip ahead if rowspan > 1
+      // 如果行跨度 > 1，则跳过剩余行
       row += cell.attrs.rowspan - 1
     } else {
       const type = refColumn == null ? tableNodeTypes(table.type.schema).cell : table.nodeAt(map.map[index + refColumn])!.type
@@ -65,7 +64,7 @@ export function addColumn(tr: Transaction, { map, tableStart, table }: TableRect
 }
 
 /**
- * Command to add a column before the column with the selection.
+ * 在选中列之前添加一列的命令。
  *
  * @public
  */
@@ -79,7 +78,7 @@ export function addColumnBefore(state: EditorState, dispatch?: (tr: Transaction)
 }
 
 /**
- * Command to add a column after the column with the selection.
+ * 在选中列之后添加一列的命令。
  *
  * @public
  */
@@ -93,6 +92,8 @@ export function addColumnAfter(state: EditorState, dispatch?: (tr: Transaction) 
 }
 
 /**
+ * 从表格中移除指定列。
+ *
  * @public
  */
 export function removeColumn(tr: Transaction, { map, table, tableStart }: TableRect, col: number) {
@@ -102,7 +103,7 @@ export function removeColumn(tr: Transaction, { map, table, tableStart }: TableR
     const pos = map.map[index]
     const cell = table.nodeAt(pos)!
     const attrs = cell.attrs as CellAttrs
-    // If this is part of a col-spanning cell
+    // 如果这是跨列单元格的一部分
     if ((col > 0 && map.map[index - 1] == pos) || (col < map.width - 1 && map.map[index + 1] == pos)) {
       tr.setNodeMarkup(tr.mapping.slice(mapStart).map(tableStart + pos), null, removeColSpan(attrs, col - map.colCount(pos)))
     } else {
@@ -114,7 +115,7 @@ export function removeColumn(tr: Transaction, { map, table, tableStart }: TableR
 }
 
 /**
- * Command function that removes the selected columns from a table.
+ * 删除表格中选中列的命令函数。
  *
  * @public
  */
@@ -129,7 +130,7 @@ export function deleteColumn(state: EditorState, dispatch?: (tr: Transaction) =>
       if (i == rect.left) break
       const table = rect.tableStart ? tr.doc.nodeAt(rect.tableStart - 1) : tr.doc
       if (!table) {
-        throw RangeError('No table found')
+        throw RangeError('没有找到表格')
       }
       rect.table = table
       rect.map = TableMap.get(table)
@@ -140,6 +141,8 @@ export function deleteColumn(state: EditorState, dispatch?: (tr: Transaction) =>
 }
 
 /**
+ * 检查指定行是否为表头行。
+ *
  * @public
  */
 export function rowIsHeader(map: TableMap, table: Node, row: number): boolean {
@@ -149,6 +152,8 @@ export function rowIsHeader(map: TableMap, table: Node, row: number): boolean {
 }
 
 /**
+ * 在表格的指定位置添加一行。
+ *
  * @public
  */
 export function addRow(tr: Transaction, { map, tableStart, table }: TableRect, row: number): Transaction {
@@ -158,7 +163,7 @@ export function addRow(tr: Transaction, { map, tableStart, table }: TableRect, r
   let refRow: number | null = row > 0 ? -1 : 0
   if (rowIsHeader(map, table, row + refRow)) refRow = row == 0 || row == map.height ? null : 0
   for (let col = 0, index = map.width * row; col < map.width; col++, index++) {
-    // Covered by a rowspan cell
+    // 被行跨度单元格覆盖
     if (row > 0 && row < map.height && map.map[index] == map.map[index - map.width]) {
       const pos = map.map[index]
       const attrs = table.nodeAt(pos)!.attrs
@@ -178,7 +183,7 @@ export function addRow(tr: Transaction, { map, tableStart, table }: TableRect, r
 }
 
 /**
- * Add a table row before the selection.
+ * 在选中位置之前添加表格行。
  *
  * @public
  */
@@ -192,7 +197,7 @@ export function addRowBefore(state: EditorState, dispatch?: (tr: Transaction) =>
 }
 
 /**
- * Add a table row after the selection.
+ * 在选中位置之后添加表格行。
  *
  * @public
  */
@@ -206,6 +211,8 @@ export function addRowAfter(state: EditorState, dispatch?: (tr: Transaction) => 
 }
 
 /**
+ * 从表格中移除指定行。
+ *
  * @public
  */
 export function removeRow(tr: Transaction, { map, table, tableStart }: TableRect, row: number): void {
@@ -221,12 +228,12 @@ export function removeRow(tr: Transaction, { map, table, tableStart }: TableRect
   for (let col = 0, index = row * map.width; col < map.width; col++, index++) {
     const pos = map.map[index]
 
-    // Skip cells that are checked already
+    // 跳过已检查的单元格
     if (seen.has(pos)) continue
     seen.add(pos)
 
     if (row > 0 && pos == map.map[index - map.width]) {
-      // If this cell starts in the row above, simply reduce its rowspan
+      // 如果这个单元格从上一行开始，只需减少其行跨度
       const attrs = table.nodeAt(pos)!.attrs as CellAttrs
       tr.setNodeMarkup(tr.mapping.slice(mapFrom).map(pos + tableStart), null, {
         ...attrs,
@@ -234,7 +241,7 @@ export function removeRow(tr: Transaction, { map, table, tableStart }: TableRect
       })
       col += attrs.colspan - 1
     } else if (row < map.height && pos == map.map[index + map.width]) {
-      // Else, if it continues in the row below, it has to be moved down
+      // 否则，如果它在下一行继续，则必须向下移动
       const cell = table.nodeAt(pos)!
       const attrs = cell.attrs as CellAttrs
       const copy = cell.type.create({ ...attrs, rowspan: cell.attrs.rowspan - 1 }, cell.content)
@@ -246,7 +253,7 @@ export function removeRow(tr: Transaction, { map, table, tableStart }: TableRect
 }
 
 /**
- * Remove the selected rows from a table.
+ * 从表格中删除选中的行。
  *
  * @public
  */
@@ -261,7 +268,7 @@ export function deleteRow(state: EditorState, dispatch?: (tr: Transaction) => vo
       if (i == rect.top) break
       const table = rect.tableStart ? tr.doc.nodeAt(rect.tableStart - 1) : tr.doc
       if (!table) {
-        throw RangeError('No table found')
+        throw RangeError('没有找到表格')
       }
       rect.table = table
       rect.map = TableMap.get(rect.table)
@@ -271,12 +278,20 @@ export function deleteRow(state: EditorState, dispatch?: (tr: Transaction) => vo
   return true
 }
 
+/**
+ * 检查单元格是否为空。
+ * 判断单元格是否仅包含一个空的文本块。
+ */
 function isEmpty(cell: Node): boolean {
   const c = cell.content
 
   return c.childCount == 1 && c.child(0).isTextblock && c.child(0).childCount == 0
 }
 
+/**
+ * 检查单元格是否与矩形区域重叠。
+ * 判断矩形区域的边界是否与某些跨行或跨列的单元格相交。
+ */
 function cellsOverlapRectangle({ width, height, map }: TableMap, rect: Rect) {
   let indexTop = rect.top * width + rect.left,
     indexLeft = indexTop
@@ -296,8 +311,8 @@ function cellsOverlapRectangle({ width, height, map }: TableMap, rect: Rect) {
 }
 
 /**
- * Merge the selected cells into a single cell. Only available when
- * the selected cells' outline forms a rectangle.
+ * 合并选中的单元格为单个单元格。
+ * 仅当选中的单元格轮廓形成矩形时可用。
  *
  * @public
  */
@@ -349,8 +364,8 @@ export function mergeCells(state: EditorState, dispatch?: (tr: Transaction) => v
 }
 
 /**
- * Split a selected cell, whose rowpan or colspan is greater than one,
- * into smaller cells. Use the first cell type for the new cells.
+ * 拆分选中的单元格，其行跨度或列跨度大于1，
+ * 拆分为较小的单元格。使用第一个单元格类型作为新单元格的类型。
  *
  * @public
  */
@@ -371,8 +386,8 @@ export interface GetCellTypeOptions {
 }
 
 /**
- * Split a selected cell, whose rowpan or colspan is greater than one,
- * into smaller cells with the cell type (th, td) returned by getType function.
+ * 拆分选中的单元格，其行跨度或列跨度大于1，
+ * 拆分为具有由getType函数返回的单元格类型（th，td）的较小单元格。
  *
  * @public
  */
@@ -431,9 +446,8 @@ export function splitCellWithType(getCellType: (options: GetCellTypeOptions) => 
 }
 
 /**
- * Returns a command that sets the given attribute to the given value,
- * and is only available when the currently selected cell doesn't
- * already have that attribute set to that value.
+ * 返回一个命令，该命令将给定属性设置为给定值，
+ * 并且仅当当前选中的单元格尚未将该属性设置为该值时才可用。
  *
  * @public
  */
@@ -463,6 +477,9 @@ export function setCellAttr(name: string, value: unknown): Command {
   }
 }
 
+/**
+ * 已弃用的切换表头函数，根据类型切换表头。
+ */
 function deprecated_toggleHeader(type: ToggleHeaderType): Command {
   return function (state, dispatch) {
     if (!isInTable(state)) return false
@@ -491,14 +508,14 @@ function deprecated_toggleHeader(type: ToggleHeaderType): Command {
       for (
         let i = 0;
         i < cells.length;
-        i++ // Remove headers, if any
+        i++ // 移除表头（如果有）
       )
         if (nodes[i].type == types.header_cell) tr.setNodeMarkup(rect.tableStart + cells[i], types.cell, nodes[i].attrs)
       if (tr.steps.length == 0)
         for (
           let i = 0;
           i < cells.length;
-          i++ // No headers removed, add instead
+          i++ // 没有移除表头，则添加
         )
           tr.setNodeMarkup(rect.tableStart + cells[i], types.header_cell, nodes[i].attrs)
       dispatch(tr)
@@ -507,8 +524,12 @@ function deprecated_toggleHeader(type: ToggleHeaderType): Command {
   }
 }
 
+/**
+ * 根据类型检查表头是否启用。
+ * 检查第一行或第一列的单元格是否都是表头单元格。
+ */
 function isHeaderEnabledByType(type: 'row' | 'column', rect: TableRect, types: Record<string, NodeType>): boolean {
-  // Get cell positions for first row or first column
+  // 获取第一行或第一列的单元格位置
   const cellPositions = rect.map.cellsInRect({
     left: 0,
     top: 0,
@@ -532,8 +553,8 @@ function isHeaderEnabledByType(type: 'row' | 'column', rect: TableRect, types: R
 export type ToggleHeaderType = 'column' | 'row' | 'cell'
 
 /**
- * Toggles between row/column header and normal cells (Only applies to first row/column).
- * For deprecated behavior pass `useDeprecatedLogic` in options with true.
+ * 在行/列表头和普通单元格之间切换（仅适用于第一行/列）。
+ * 对于已弃用的行为，在选项中传递 `useDeprecatedLogic` 为 true。
  *
  * @public
  */
@@ -592,7 +613,7 @@ export function toggleHeader(type: ToggleHeaderType, options?: { useDeprecatedLo
 }
 
 /**
- * Toggles whether the selected row contains header cells.
+ * 切换选中行是否包含表头单元格。
  *
  * @public
  */
@@ -601,7 +622,7 @@ export const toggleHeaderRow: Command = toggleHeader('row', {
 })
 
 /**
- * Toggles whether the selected column contains header cells.
+ * 切换选中列是否包含表头单元格。
  *
  * @public
  */
@@ -610,7 +631,7 @@ export const toggleHeaderColumn: Command = toggleHeader('column', {
 })
 
 /**
- * Toggles whether the selected cells are header cells.
+ * 切换选中单元格是否为表头单元格。
  *
  * @public
  */
@@ -618,6 +639,10 @@ export const toggleHeaderCell: Command = toggleHeader('cell', {
   useDeprecatedLogic: false,
 })
 
+/**
+ * 根据给定方向查找下一个单元格。
+ * 在表格中向前或向后导航时使用。
+ */
 function findNextCell($cell: ResolvedPos, dir: Direction): number | null {
   if (dir < 0) {
     const before = $cell.nodeBefore
@@ -645,8 +670,7 @@ function findNextCell($cell: ResolvedPos, dir: Direction): number | null {
 }
 
 /**
- * Returns a command for selecting the next (direction=1) or previous
- * (direction=-1) cell in a table.
+ * 返回用于选择表格中下一个(direction=1)或上一个(direction=-1)单元格的命令。
  *
  * @public
  */
@@ -664,7 +688,7 @@ export function goToNextCell(direction: Direction): Command {
 }
 
 /**
- * Deletes the table around the selection, if any.
+ * 删除选区周围的表格（如果有）。
  *
  * @public
  */
@@ -681,7 +705,7 @@ export function deleteTable(state: EditorState, dispatch?: (tr: Transaction) => 
 }
 
 /**
- * Deletes the content of the selected cells, if they are not empty.
+ * 删除选中单元格的内容（如果它们不为空）。
  *
  * @public
  */

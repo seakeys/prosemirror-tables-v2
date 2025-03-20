@@ -4,6 +4,7 @@ import { CellAttrs } from './util'
 
 /**
  * @public
+ * 表格视图组件，实现了NodeView接口
  */
 export class TableView implements NodeView {
   public dom: HTMLDivElement
@@ -11,6 +12,11 @@ export class TableView implements NodeView {
   public colgroup: HTMLTableColElement
   public contentDOM: HTMLTableSectionElement
 
+  /**
+   * 创建表格视图的构造函数
+   * @param node 表格节点
+   * @param defaultCellMinWidth 默认单元格最小宽度
+   */
   constructor(
     public node: Node,
     public defaultCellMinWidth: number,
@@ -24,6 +30,11 @@ export class TableView implements NodeView {
     this.contentDOM = this.table.appendChild(document.createElement('tbody'))
   }
 
+  /**
+   * 更新表格视图
+   * @param node 新的表格节点
+   * @returns 如果节点类型匹配则返回true，否则返回false
+   */
   update(node: Node): boolean {
     if (node.type != this.node.type) return false
     this.node = node
@@ -31,6 +42,11 @@ export class TableView implements NodeView {
     return true
   }
 
+  /**
+   * 判断是否忽略特定的DOM变化
+   * @param record DOM变化记录
+   * @returns 如果是目标为表格或列组的属性变化则返回true
+   */
   ignoreMutation(record: ViewMutationRecord): boolean {
     return record.type == 'attributes' && (record.target == this.table || this.colgroup.contains(record.target))
   }
@@ -38,6 +54,13 @@ export class TableView implements NodeView {
 
 /**
  * @public
+ * 根据节点内容更新表格列的大小
+ * @param node 表格节点
+ * @param colgroup 表格的列组元素
+ * @param table 表格元素
+ * @param defaultCellMinWidth 默认单元格最小宽度
+ * @param overrideCol 可选，要覆盖的列索引
+ * @param overrideValue 可选，覆盖列的宽度值
  */
 export function updateColumnsOnResize(
   node: Node,
