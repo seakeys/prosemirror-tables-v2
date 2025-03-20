@@ -1,238 +1,173 @@
-# ProseMirror table module
+# ProseMirror 表格模块
 
-This module defines a schema extension to support tables with
-rowspan/colspan support, a custom selection class for cell selections
-in such a table, a plugin to manage such selections and enforce
-invariants on such tables, and a number of commands to work with
-tables.
+本模块定义了一个架构扩展，支持带有行跨度/列跨度的表格，包括：
+- 表格单元格选择的自定义选择类
+- 管理此类选择并强制执行不变性的插件
+- 用于处理表格的多个命令
 
-The top-level directory contains a `demo.js` and `index.html`, which
-can be built with `pnpm run build_demo` to show a simple demo of how the
-module can be used.
+顶层目录包含 `demo.js` 和 `index.html`，可以通过 `pnpm run build_demo` 构建，展示模块的简单演示。
 
-## [Live Demo](https://prosemirror-tables.netlify.app/)
+## [在线演示](https://prosemirror-tables.netlify.app/)
 
-## Documentation
+## 文档
 
-The module's main file exports everything you need to work with it.
-The first thing you'll probably want to do is create a table-enabled
-schema. That's what `tableNodes` is for:
+模块的主文件导出了使用它所需的一切。你可能首先要做的是创建一个支持表格的架构。这就是 `tableNodes` 的用途：
 
- * **`tableNodes`**`(options: Object) → Object`\
-   This function creates a set of [node
-   specs](http://prosemirror.net/docs/ref/#model.SchemaSpec.nodes) for
-   `table`, `table_row`, and `table_cell` nodes types as used by this
-   module. The result can then be added to the set of nodes when
-   creating a a schema.
+ * **`tableNodes`**`(options: Object) → Object`\
+   这个函数为 `table`、`table_row` 和 `table_cell` 节点类型创建一组[节点规范](http://prosemirror.net/docs/ref/#model.SchemaSpec.nodes)，用于此模块。结果可以在创建架构时添加到节点集中。
 
     * **`options`**`: Object`\
-      The following options are understood:
+      支持以下选项：
 
        * **`tableGroup`**`: ?string`\
-         A group name (something like `"block"`) to add to the table
-         node type.
+         要添加到表格节点类型的组名（比如 `"block"`）。
 
        * **`cellContent`**`: string`\
-         The content expression for table cells.
+         表格单元格的内容表达式。
 
        * **`cellAttributes`**`: ?Object`\
-         Additional attributes to add to cells. Maps attribute names to
-         objects with the following properties:
+         要添加到单元格的额外属性。属性名映射到具有以下属性的对象：
 
           * **`default`**`: any`\
-            The attribute's default value.
+            属性的默认值。
 
-          * **`getFromDOM`**`: ?fn(dom.Node) → any`\
-            A function to read the attribute's value from a DOM node.
+          * **`getFromDOM`**`: ?fn(dom.Node) → any`\
+            从 DOM 节点读取属性值的函数。
 
-          * **`setDOMAttr`**`: ?fn(value: any, attrs: Object)`\
-            A function to add the attribute's value to an attribute
-            object that's used to render the cell's DOM.
-
-
- * **`tableEditing`**`() → Plugin`\
-   Creates a [plugin](http://prosemirror.net/docs/ref/#state.Plugin)
-   that, when added to an editor, enables cell-selection, handles
-   cell-based copy/paste, and makes sure tables stay well-formed (each
-   row has the same width, and cells don't overlap).
-
-   You should probably put this plugin near the end of your array of
-   plugins, since it handles mouse and arrow key events in tables
-   rather broadly, and other plugins, like the gap cursor or the
-   column-width dragging plugin, might want to get a turn first to
-   perform more specific behavior.
+          * **`setDOMAttr`**`: ?fn(value: any, attrs: Object)`\
+            用于向渲染单元格 DOM 的属性对象添加属性值的函数。
 
 
-### class CellSelection extends Selection
+ * **`tableEditing`**`() → Plugin`\
+   创建一个[插件](http://prosemirror.net/docs/ref/#state.Plugin)，当添加到编辑器时：
+   - 启用单元格选择
+   - 处理基于单元格的复制/粘贴
+   - 确保表格保持良好的结构（每行宽度相同，单元格不重叠）。
 
-A [`Selection`](http://prosemirror.net/docs/ref/#state.Selection)
-subclass that represents a cell selection spanning part of a table.
-With the plugin enabled, these will be created when the user
-selects across cells, and will be drawn by giving selected cells a
-`selectedCell` CSS class.
+   你可能应该将此插件放在插件数组的末尾，因为它广泛处理表格中的鼠标和箭头键事件，而其他插件（如间隙光标或列宽拖动插件）可能希望先执行更具体的行为。
 
- * `new `**`CellSelection`**`($anchorCell: ResolvedPos, $headCell: ?ResolvedPos = $anchorCell)`\
-   A table selection is identified by its anchor and head cells. The
-   positions given to this constructor should point _before_ two
-   cells in the same table. They may be the same, to select a single
-   cell.
+
+### 类 CellSelection 继承自 Selection
+
+一个 [`Selection`](http://prosemirror.net/docs/ref/#state.Selection) 的子类，表示跨越表格部分的单元格选择。启用插件后，当用户跨单元格选择时会创建这些选择，并通过给选定单元格添加 `selectedCell` CSS 类来绘制。
+
+ * `new `**`CellSelection`**`($anchorCell: ResolvedPos, $headCell: ?ResolvedPos = $anchorCell)`\
+   表格选择通过其锚点和头部单元格来标识。传递给构造函数的位置应指向同一表格中两个单元格的_前面_。它们可以相同，以选择单个单元格。
 
  * **`$anchorCell`**`: ResolvedPos`\
-   A resolved position pointing _in front of_ the anchor cell (the one
-   that doesn't move when extending the selection).
+   指向锚点单元格（选择时不移动的单元格）_前面_的已解析位置。
 
  * **`$headCell`**`: ResolvedPos`\
-   A resolved position pointing in front of the head cell (the one
-   moves when extending the selection).
+   指向头部单元格（扩展选择时移动的单元格）前面的已解析位置。
 
- * **`content`**`() → Slice`\
-   Returns a rectangular slice of table rows containing the selected
-   cells.
+ * **`content`**`() → Slice`\
+   返回包含选定单元格的矩形表格行。
 
- * **`isColSelection`**`() → bool`\
-   True if this selection goes all the way from the top to the
-   bottom of the table.
+ * **`isColSelection`**`() → bool`\
+   如果选择从表格顶部到底部，则为 true。
 
- * **`isRowSelection`**`() → bool`\
-   True if this selection goes all the way from the left to the
-   right of the table.
+ * **`isRowSelection`**`() → bool`\
+   如果选择从表格左侧到右侧，则为 true。
 
- * `static `**`colSelection`**`($anchorCell: ResolvedPos, $headCell: ?ResolvedPos = $anchorCell) → CellSelection`\
-   Returns the smallest column selection that covers the given anchor
-   and head cell.
+ * `static `**`colSelection`**`($anchorCell: ResolvedPos, $headCell: ?ResolvedPos = $anchorCell) → CellSelection`\
+   返回覆盖给定锚点和头部单元格的最小列选择。
 
- * `static `**`rowSelection`**`($anchorCell: ResolvedPos, $headCell: ?ResolvedPos = $anchorCell) → CellSelection`\
-   Returns the smallest row selection that covers the given anchor
-   and head cell.
+ * `static `**`rowSelection`**`($anchorCell: ResolvedPos, $headCell: ?ResolvedPos = $anchorCell) → CellSelection`\
+   返回覆盖给定锚点和头部单元格的最小行选择。
 
- * `static `**`create`**`(doc: Node, anchorCell: number, headCell: ?number = anchorCell) → CellSelection`
+ * `static `**`create`**`(doc: Node, anchorCell: number, headCell: ?number = anchorCell) → CellSelection`
 
 
-### Commands
+### 命令
 
-The following commands can be used to make table-editing functionality
-available to users.
+以下命令可用于为用户提供表格编辑功能。
 
- * **`addColumnBefore`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Command to add a column before the column with the selection.
+ * **`addColumnBefore`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   在选择的列之前添加列的命令。
 
+ * **`addColumnAfter`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   在选择的列之后添加列的命令。
 
- * **`addColumnAfter`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Command to add a column after the column with the selection.
+ * **`deleteColumn`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   从表格中删除选定列的命令函数。
 
+ * **`addRowBefore`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   在选择前添加表格行。
 
- * **`deleteColumn`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Command function that removes the selected columns from a table.
+ * **`addRowAfter`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   在选择后添加表格行。
 
+ * **`deleteRow`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   从表格中删除选定行。
 
- * **`addRowBefore`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Add a table row before the selection.
+ * **`mergeCells`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   将选定的单元格合并为单个单元格。仅在选定单元格的轮廓形成矩形时可用。
 
+ * **`splitCell`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   拆分选定的单元格，其行跨度或列跨度大于 1，分割成较小的单元格。使用第一个单元格类型作为新单元格。
 
- * **`addRowAfter`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Add a table row after the selection.
+ * **`splitCellWithType`**`(getType: fn({row: number, col: number, node: Node}) → NodeType) → fn(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   拆分选定的单元格（行跨度或列跨度大于 1），使用 getType 函数返回的单元格类型（th、td）将其拆分为较小的单元格。
 
+ * **`setCellAttr`**`(name: string, value: any) → fn(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   返回一个命令，设置给定属性为给定值，仅在当前选定单元格尚未将该属性设置为该值时可用。
 
- * **`deleteRow`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Remove the selected rows from a table.
+ * **`toggleHeaderRow`**`(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   切换选定行是否包含标题单元格。
 
+ * **`toggleHeaderColumn`**`(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   切换选定列是否包含标题单元格。
 
- * **`mergeCells`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Merge the selected cells into a single cell. Only available when
-   the selected cells' outline forms a rectangle.
+ * **`toggleHeaderCell`**`(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   切换选定的单元格是否为标题单元格。
 
+ * **`toggleHeader`**`(type: string, options: ?{useDeprecatedLogic: bool}) → fn(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   切换行/列标题和普通单元格（仅适用于第一行/列）。
+   对于已弃用的行为，在选项中传递 `useDeprecatedLogic` 为 true。
 
- * **`splitCell`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Split a selected cell, whose rowpan or colspan is greater than one,
-   into smaller cells. Use the first cell type for the new cells.
+ * **`goToNextCell`**`(direction: number) → fn(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   返回一个命令，用于在表格中选择下一个（direction=1）或上一个（direction=-1）单元格。
 
-
- * **`splitCellWithType`**`(getType: fn({row: number, col: number, node: Node}) → NodeType) → fn(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Split a selected cell, whose rowpan or colspan is greater than one,
-   into smaller cells with the cell type (th, td) returned by getType function.
-
-
- * **`setCellAttr`**`(name: string, value: any) → fn(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Returns a command that sets the given attribute to the given value,
-   and is only available when the currently selected cell doesn't
-   already have that attribute set to that value.
-
-
- * **`toggleHeaderRow`**`(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Toggles whether the selected row contains header cells.
-
-
- * **`toggleHeaderColumn`**`(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Toggles whether the selected column contains header cells.
+ * **`deleteTable`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
+   删除选择周围的表格（如果有）。
 
 
- * **`toggleHeaderCell`**`(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Toggles whether the selected cells are header cells.
+### 实用工具
+
+ * **`fixTables`**`(state: EditorState, oldState: ?EditorState) → ?Transaction`\
+   检查给定状态文档中的所有表格，并在必要时返回修复它们的事务。如果提供了 `oldState`，则假定它保存了先前的、已知正确的状态，将用于避免重新扫描未更改的文档部分。
 
 
- * **`toggleHeader`**`(type: string, options: ?{useDeprecatedLogic: bool}) → fn(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Toggles between row/column header and normal cells (Only applies to first row/column).
-   For deprecated behavior pass `useDeprecatedLogic` in options with true.
+### 类 TableMap
 
-
- * **`goToNextCell`**`(direction: number) → fn(EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Returns a command for selecting the next (direction=1) or previous
-   (direction=-1) cell in a table.
-
-
- * **`deleteTable`**`(state: EditorState, dispatch: ?fn(tr: Transaction)) → bool`\
-   Deletes the table around the selection, if any.
-
-
-### Utilities
-
- * **`fixTables`**`(state: EditorState, oldState: ?EditorState) → ?Transaction`\
-   Inspect all tables in the given state's document and return a
-   transaction that fixes them, if necessary. If `oldState` was
-   provided, that is assumed to hold a previous, known-good state,
-   which will be used to avoid re-scanning unchanged parts of the
-   document.
-
-
-### class TableMap
-
-A table map describes the structore of a given table. To avoid
-recomputing them all the time, they are cached per table node. To
-be able to do that, positions saved in the map are relative to the
-start of the table, rather than the start of the document.
+表格映射描述了给定表格的结构。为避免频繁重新计算，它们按表格节点缓存。为了能够这样做，映射中保存的位置是相对于表格开始，而不是文档开始。
 
  * **`width`**`: number`\
-   The width of the table
+   表格的宽度
 
  * **`height`**`: number`\
-   The table's height
+   表格的高度
 
  * **`map`**`: [number]`\
-   A width * height array with the start position of
-   the cell covering that part of the table in each slot
+   一个 width * height 数组，每个槽位包含覆盖表格该部分的单元格的起始位置
 
- * **`findCell`**`(pos: number) → Rect`\
-   Find the dimensions of the cell at the given position.
+ * **`findCell`**`(pos: number) → Rect`\
+   找到给定位置的单元格尺寸。
 
- * **`colCount`**`(pos: number) → number`\
-   Find the left side of the cell at the given position.
+ * **`colCount`**`(pos: number) → number`\
+   找到给定位置单元格的左侧。
 
- * **`nextCell`**`(pos: number, axis: string, dir: number) → ?number`\
-   Find the next cell in the given direction, starting from the cell
-   at `pos`, if any.
+ * **`nextCell`**`(pos: number, axis: string, dir: number) → ?number`\
+   在给定方向上找到下一个单元格，从 `pos` 处的单元格开始（如果有）。
 
- * **`rectBetween`**`(a: number, b: number) → Rect`\
-   Get the rectangle spanning the two given cells.
+ * **`rectBetween`**`(a: number, b: number) → Rect`\
+   获取跨越两个给定单元格的矩形。
 
- * **`cellsInRect`**`(rect: Rect) → [number]`\
-   Return the position of all cells that have the top left corner in
-   the given rectangle.
+ * **`cellsInRect`**`(rect: Rect) → [number]`\
+   返回在给定矩形中具有左上角的所有单元格的位置。
 
- * **`positionAt`**`(row: number, col: number, table: Node) → number`\
-   Return the position at which the cell at the given row and column
-   starts, or would start, if a cell started there.
+ * **`positionAt`**`(row: number, col: number, table: Node) → number`\
+   返回给定行和列的单元格开始的位置，或者如果单元格从那里开始，则返回该位置。
 
- * `static `**`get`**`(table: Node) → TableMap`\
-   Find the table map for the given table node.
-
-
+ * `static `**`get`**`(table: Node) → TableMap`\
+   为给定的表格节点查找表格映射。
