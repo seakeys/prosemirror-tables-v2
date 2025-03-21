@@ -65,26 +65,8 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
       apply(tr, prev) {
         // 检查插件的元数据更新
         const overlayMeta = tr.getMeta(tableOverlayPluginKey)
-        if (overlayMeta !== undefined) {
-          return overlayMeta
-        }
 
-        // 如果文档变化，重新计算位置
-        if (tr.docChanged) {
-          return { activeCellRect: null, selectionRects: [] }
-        }
-
-        // 如果选择改变了
-        if (tr.selectionSet) {
-          const selection = tr.selection
-          if (selection instanceof CellSelection) {
-            // 当出现CellSelection时，保持状态不变，将在update中处理
-            return prev
-          } else {
-            // 如果不是CellSelection，清除状态
-            return { activeCellRect: null, selectionRects: [] }
-          }
-        }
+        if (overlayMeta) return overlayMeta
 
         return prev
       },
@@ -146,13 +128,7 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
 
       // 将覆盖层容器添加到编辑器
       const editorContainer = editorView.dom.parentNode
-      if (editorContainer && editorContainer instanceof HTMLElement) {
-        // 确保编辑器容器有定位样式
-        if (getComputedStyle(editorContainer).position === 'static') {
-          editorContainer.style.position = 'relative'
-        }
-        editorContainer.appendChild(overlayContainer)
-      }
+      if (editorContainer) editorContainer.appendChild(overlayContainer)
 
       // 创建手柄的辅助函数
       function createHandle(cursor: string): HTMLElement {
@@ -196,43 +172,45 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
     },
 
     props: {
-      // 处理鼠标点击事件
-      handleClick(view, pos, event) {
-        // 仅处理鼠标左键点击
-        if (event.button !== 0) return false
+      handleDOMEvents: {
+        mousedown(view, event) {
+          // 1. 获取鼠标坐标对应的文档位置
+          const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
+          if (!pos) return false // 如果鼠标不在编辑器上，则退出
 
-        // 查找点击位置所在的单元格
-        const $cell = cellAround(view.state.doc.resolve(pos))
+          // 2. 使用 cellAround 函数查找该位置是否在单元格内
+          const $cell = cellAround(view.state.doc.resolve(pos.pos))
+          if ($cell) {
+            const cellPos = $cell.pos
+            const cellRect = getCellRect(view, cellPos)
 
-        if ($cell) {
-          const cellPos = $cell.pos
-          const cellRect = getCellRect(view, cellPos)
-
-          // 更新覆盖层状态
-          if (cellRect) {
-            view.dispatch(
-              view.state.tr.setMeta(tableOverlayPluginKey, {
-                activeCellRect: cellRect,
-                selectionRects: [],
-              }),
-            )
+            // 更新覆盖层状态
+            if (cellRect) {
+              view.dispatch(
+                view.state.tr.setMeta(tableOverlayPluginKey, {
+                  activeCellRect: cellRect,
+                  selectionRects: [],
+                }),
+              )
+            }
           }
-
-          return false // 不阻止事件传播
-        }
-
-        // 如果不在单元格中点击，清除活动单元格
-        const state = tableOverlayPluginKey.getState(view.state)
-        if (state && (state.activeCellRect || state.selectionRects.length > 0)) {
-          view.dispatch(
-            view.state.tr.setMeta(tableOverlayPluginKey, {
-              activeCellRect: null,
-              selectionRects: [],
-            }),
-          )
-        }
-
-        return false
+        },
+        mousemove(view) {
+          const currentState = tableOverlayPluginKey.getState(view.state)
+          if (currentState.activeCellRect) {
+            const cellRect = getCellRect(view, currentState.activeCellRect.cellPos)
+            if (cellRect) {
+              view.dispatch(
+                view.state.tr.setMeta(tableOverlayPluginKey, {
+                  activeCellRect: cellRect,
+                  selectionRects: currentState.selectionRects,
+                }),
+              )
+            }
+          } else {
+            // console.log(currentState)
+          }
+        },
       },
     },
   })
@@ -246,6 +224,7 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
     // 如果是单元格选择
     if (selection instanceof CellSelection) {
       const selRect = getSelectionRect(view, selection)
+
       if (selRect) {
         // 更新背景覆盖层
         selectionBackgroundOverlay.style.left = `${selRect.left}px`
