@@ -18,7 +18,7 @@ interface CellRect {
 
 // 定义插件状态
 interface TableOverlayState {
-  activeCellRect: CellRect | null
+  activeCellPos: number | null
   overlayContainer: HTMLElement | null
   selectionBackgroundOverlay: HTMLElement | null
   selectionBorderOverlay: HTMLElement | null
@@ -64,43 +64,31 @@ export function updateTableOverlay(view: EditorView): void {
       state.selectionBackgroundOverlay.style.display = 'none'
       state.selectionBorderOverlay.style.display = 'none'
     }
-  } else {
-    // 如果不是单元格选择
-    if (state && state.activeCellRect) {
-      const rect = state.activeCellRect
+  } else if (state.activeCellPos) {
+    // 如果不是单元格选择但有活动单元格
+    const cellRect = getCellRect(view, state.activeCellPos)
 
+    if (cellRect) {
       // 更新背景覆盖层
-      state.selectionBackgroundOverlay.style.left = `${rect.left}px`
-      state.selectionBackgroundOverlay.style.top = `${rect.top}px`
-      state.selectionBackgroundOverlay.style.width = `${rect.width}px`
-      state.selectionBackgroundOverlay.style.height = `${rect.height}px`
+      state.selectionBackgroundOverlay.style.left = `${cellRect.left}px`
+      state.selectionBackgroundOverlay.style.top = `${cellRect.top}px`
+      state.selectionBackgroundOverlay.style.width = `${cellRect.width}px`
+      state.selectionBackgroundOverlay.style.height = `${cellRect.height}px`
       state.selectionBackgroundOverlay.style.display = 'block'
 
       // 更新边框覆盖层和手柄
-      state.selectionBorderOverlay.style.left = `${rect.left}px`
-      state.selectionBorderOverlay.style.top = `${rect.top}px`
-      state.selectionBorderOverlay.style.width = `${rect.width}px`
-      state.selectionBorderOverlay.style.height = `${rect.height}px`
+      state.selectionBorderOverlay.style.left = `${cellRect.left}px`
+      state.selectionBorderOverlay.style.top = `${cellRect.top}px`
+      state.selectionBorderOverlay.style.width = `${cellRect.width}px`
+      state.selectionBorderOverlay.style.height = `${cellRect.height}px`
       state.selectionBorderOverlay.style.display = 'block'
     } else {
       state.selectionBackgroundOverlay.style.display = 'none'
       state.selectionBorderOverlay.style.display = 'none'
     }
-  }
-}
-
-// 更新激活单元格函数
-export function updateActiveCellRect(view: EditorView, cellPos?: number): void {
-  const currentState = tableOverlayPluginKey.getState(view.state)
-  if (!currentState) return
-
-  const cellRect = getCellRect(view, cellPos ? cellPos : currentState.activeCellRect.cellPos)
-  if (cellRect) {
-    view.dispatch(
-      view.state.tr.setMeta(tableOverlayPluginKey, {
-        activeCellRect: cellRect,
-      }),
-    )
+  } else {
+    state.selectionBackgroundOverlay.style.display = 'none'
+    state.selectionBorderOverlay.style.display = 'none'
   }
 }
 
@@ -177,7 +165,7 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
       // 初始化状态
       init() {
         return {
-          activeCellRect: null,
+          activeCellPos: null,
           overlayContainer: null,
           selectionBackgroundOverlay: null,
           selectionBorderOverlay: null,
@@ -194,12 +182,8 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
         if (overlayMeta) {
           // 保留DOM元素引用
           return {
+            ...prev,
             ...overlayMeta,
-            overlayContainer: prev.overlayContainer,
-            selectionBackgroundOverlay: prev.selectionBackgroundOverlay,
-            selectionBorderOverlay: prev.selectionBorderOverlay,
-            topLeftHandle: prev.topLeftHandle,
-            bottomRightHandle: prev.bottomRightHandle,
           }
         }
 
@@ -323,7 +307,13 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
           const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
           if (!pos) return false
           const $cell = cellAround(view.state.doc.resolve(pos.pos))
-          if ($cell) updateActiveCellRect(view, $cell.pos)
+          if ($cell) {
+            view.dispatch(
+              view.state.tr.setMeta(tableOverlayPluginKey, {
+                activeCellPos: $cell.pos,
+              }),
+            )
+          }
           return false
         },
       },
