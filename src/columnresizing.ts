@@ -5,6 +5,7 @@ import { tableNodeTypes } from './schema'
 import { TableMap } from './tablemap'
 import { TableView, updateColumnsOnResize } from './tableview'
 import { cellAround, CellAttrs, pointsAtCell } from './util'
+import { updateTableOverlay } from './tableOverlayPlugin'
 
 /**
  * @public
@@ -372,6 +373,7 @@ function displayColumnWidth(view: EditorView, cell: number, width: number, defau
   }
   if (!dom) return
   updateColumnsOnResize(table, dom.firstChild as HTMLTableColElement, dom as HTMLTableElement, defaultCellMinWidth, col, width)
+  updateTableOverlay(view)
 }
 
 /**
