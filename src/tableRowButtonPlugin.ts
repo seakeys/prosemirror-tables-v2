@@ -4,6 +4,7 @@ import { cellAround } from './util'
 import { TableMap } from './tablemap'
 import { addRowBefore, addRowAfter, deleteRow } from './commands'
 import { CellSelection } from './cellselection'
+import { highlightRowOrColumn } from './tableOverlayPlugin'
 
 // 行按钮插件
 export const tableRowButtonPluginKey = new PluginKey('tableRowButton')
@@ -188,6 +189,10 @@ export function tableRowButtonPlugin() {
       button.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
+
+        // 选中整列
+        const state = tableRowButtonPluginKey.getState(editorView.state)
+        highlightRowOrColumn(editorView, 'row', state.hoveredRow)
 
         // 切换下拉菜单容器的显示状态
         if (dropdownContainer) {

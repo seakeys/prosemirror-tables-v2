@@ -3,6 +3,7 @@ import { Plugin, PluginKey } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { cellAround } from './util'
 import { CellSelection } from './cellselection'
+import { TableMap } from './tablemap'
 
 // 创建插件键
 export const tableOverlayPluginKey = new PluginKey('tableOverlay')
@@ -24,6 +25,72 @@ interface TableOverlayState {
   selectionBorderOverlay: HTMLElement | null
   topLeftHandle: HTMLElement | null
   bottomRightHandle: HTMLElement | null
+}
+
+/**
+ * 高亮表格中的行或列
+ * @param view 编辑器视图
+ * @param type 高亮类型：'row'表示行，'column'表示列
+ * @param index 行号或列号（从0开始）
+ */
+export function highlightRowOrColumn(view: EditorView, type: 'row' | 'column', index: number): void {
+  const $pos = view.state.selection.$head
+  // 查找最近的表格
+  let tablePos = -1
+  let tableNode = null
+
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    const node = $pos.node(depth)
+    if (node.type.spec.tableRole === 'table') {
+      tablePos = $pos.before(depth)
+      tableNode = node
+      break
+    }
+  }
+
+  if (tablePos === -1 || !tableNode) {
+    console.error('未找到表格')
+    return
+  }
+
+  const map = TableMap.get(tableNode)
+  const start = tablePos + 1 // 表格内容的起始位置
+
+  if (type === 'row') {
+    if (index < 0 || index >= map.height) {
+      console.error(`行索引 ${index} 超出范围`)
+      return
+    }
+
+    // 获取该行第一个单元格和最后一个单元格
+    const firstCellPos = map.map[index * map.width]
+    const lastCellPos = map.map[index * map.width + map.width - 1]
+
+    // 创建单元格选择
+    const $anchor = view.state.doc.resolve(start + firstCellPos)
+    const $head = view.state.doc.resolve(start + lastCellPos)
+
+    // 设置选择
+    const cellSelection = new CellSelection($anchor, $head)
+    view.dispatch(view.state.tr.setSelection(cellSelection))
+  } else if (type === 'column') {
+    if (index < 0 || index >= map.width) {
+      console.error(`列索引 ${index} 超出范围`)
+      return
+    }
+
+    // 获取该列第一个单元格和最后一个单元格
+    const firstCellPos = map.map[index]
+    const lastCellPos = map.map[(map.height - 1) * map.width + index]
+
+    // 创建单元格选择
+    const $anchor = view.state.doc.resolve(start + firstCellPos)
+    const $head = view.state.doc.resolve(start + lastCellPos)
+
+    // 设置选择
+    const cellSelection = new CellSelection($anchor, $head)
+    view.dispatch(view.state.tr.setSelection(cellSelection))
+  }
 }
 
 // 暴露更新函数
