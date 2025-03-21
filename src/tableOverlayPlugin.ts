@@ -26,15 +26,6 @@ interface TableOverlayState {
   bottomRightHandle: HTMLElement | null
 }
 
-// 默认配置
-interface OverlayConfig {
-  selectionBorderColor: string
-  selectionBorderWidth: number
-  handleSize: number
-  handleBorderColor: string
-  handleBackgroundColor: string
-}
-
 // 暴露更新函数
 export function updateTableOverlay(view: EditorView): void {
   const state = tableOverlayPluginKey.getState(view.state)
@@ -147,17 +138,7 @@ export function getCellRect(view: EditorView, cellPos: number): CellRect | null 
 /**
  * 创建表格选择覆盖层插件
  */
-export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
-  // 默认配置
-  const config: OverlayConfig = {
-    selectionBorderColor: '#3E9DFE',
-    selectionBorderWidth: 2,
-    handleSize: 8,
-    handleBorderColor: '#3E9DFE',
-    handleBackgroundColor: 'white',
-    ...options,
-  }
-
+export function tableOverlayPlugin() {
   return new Plugin<TableOverlayState>({
     key: tableOverlayPluginKey,
 
@@ -198,70 +179,32 @@ export function tableOverlayPlugin(options: Partial<OverlayConfig> = {}) {
       // 创建覆盖层容器
       pluginState.overlayContainer = document.createElement('div')
       pluginState.overlayContainer.className = 'table-selection-overlay'
-      pluginState.overlayContainer.style.position = 'absolute'
-      pluginState.overlayContainer.style.top = '0'
-      pluginState.overlayContainer.style.left = '0'
-      pluginState.overlayContainer.style.right = '0'
-      pluginState.overlayContainer.style.bottom = '0'
-      pluginState.overlayContainer.style.pointerEvents = 'none'
-      pluginState.overlayContainer.style.zIndex = '2'
 
       // 创建背景覆盖层
       pluginState.selectionBackgroundOverlay = document.createElement('div')
-      pluginState.selectionBackgroundOverlay.style.position = 'absolute'
-      pluginState.selectionBackgroundOverlay.style.left = '0px'
-      pluginState.selectionBackgroundOverlay.style.top = '0px'
-      pluginState.selectionBackgroundOverlay.style.width = '0px'
-      pluginState.selectionBackgroundOverlay.style.height = '0px'
-      pluginState.selectionBackgroundOverlay.style.zIndex = '2'
-      pluginState.selectionBackgroundOverlay.style.borderRadius = '2px'
-      pluginState.selectionBackgroundOverlay.style.display = 'none'
+      pluginState.selectionBackgroundOverlay.className = 'table-background-overlay'
 
       // 创建带边框和手柄的覆盖层
       pluginState.selectionBorderOverlay = document.createElement('div')
-      pluginState.selectionBorderOverlay.style.position = 'absolute'
-      pluginState.selectionBorderOverlay.style.left = '0px'
-      pluginState.selectionBorderOverlay.style.top = '0px'
-      pluginState.selectionBorderOverlay.style.width = '0px'
-      pluginState.selectionBorderOverlay.style.height = '0px'
-      pluginState.selectionBorderOverlay.style.border = `${config.selectionBorderWidth}px solid ${config.selectionBorderColor}`
-      pluginState.selectionBorderOverlay.style.borderRadius = '2px'
-      pluginState.selectionBorderOverlay.style.zIndex = '3'
-      pluginState.selectionBorderOverlay.style.display = 'none'
-      pluginState.selectionBorderOverlay.style.boxSizing = 'border-box'
+      pluginState.selectionBorderOverlay.className = 'table-border-overlay'
 
       // 创建手柄的辅助函数
-      function createHandle(cursor: string): HTMLElement {
+      function createHandle(className: string): HTMLElement {
         const handle = document.createElement('div')
-        handle.style.position = 'absolute'
-        handle.style.width = `${config.handleSize}px`
-        handle.style.height = `${config.handleSize}px`
-        handle.style.background = 'transparent'
-        handle.style.pointerEvents = 'auto'
-        handle.style.cursor = cursor
-        handle.style.zIndex = '10'
+        handle.className = `table-handle ${className}`
 
         const handleInner = document.createElement('div')
-        handleInner.style.width = `${config.handleSize}px`
-        handleInner.style.height = `${config.handleSize}px`
-        handleInner.style.border = `2px solid ${config.handleBorderColor}`
-        handleInner.style.background = config.handleBackgroundColor
-        handleInner.style.borderRadius = '50%'
-        handleInner.style.boxSizing = 'border-box'
+        handleInner.className = 'table-handle-inner'
 
         handle.appendChild(handleInner)
         return handle
       }
 
       // 创建左上角手柄
-      pluginState.topLeftHandle = createHandle('nwse-resize')
-      pluginState.topLeftHandle.style.top = `-${config.handleSize / 2}px`
-      pluginState.topLeftHandle.style.left = `-${config.handleSize / 2}px`
+      pluginState.topLeftHandle = createHandle('table-handle-top-left')
 
       // 创建右下角手柄
-      pluginState.bottomRightHandle = createHandle('nwse-resize')
-      pluginState.bottomRightHandle.style.bottom = `-${config.handleSize / 2}px`
-      pluginState.bottomRightHandle.style.right = `-${config.handleSize / 2}px`
+      pluginState.bottomRightHandle = createHandle('table-handle-bottom-right')
 
       // 将手柄添加到边框覆盖层
       pluginState.selectionBorderOverlay.appendChild(pluginState.topLeftHandle)

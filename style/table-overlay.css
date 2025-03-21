@@ -1,0 +1,72 @@
+/* 表格覆盖层样式 */
+:root {
+  --table-overlay-border-color: #3e9dfe;
+  --table-overlay-border-width: 2px;
+  --table-overlay-handle-size: 8px;
+  --table-overlay-handle-border-color: #3e9dfe;
+  --table-overlay-handle-bg-color: white;
+}
+
+.table-selection-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.table-background-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 2;
+  border-radius: 2px;
+  display: none;
+}
+
+.table-border-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border: var(--table-overlay-border-width) solid var(--table-overlay-border-color);
+  border-radius: 2px;
+  z-index: 3;
+  display: none;
+  box-sizing: border-box;
+}
+
+.table-handle {
+  position: absolute;
+  width: var(--table-overlay-handle-size);
+  height: var(--table-overlay-handle-size);
+  background: transparent;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.table-handle-inner {
+  width: var(--table-overlay-handle-size);
+  height: var(--table-overlay-handle-size);
+  border: 2px solid var(--table-overlay-handle-border-color);
+  background: var(--table-overlay-handle-bg-color);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.table-handle-top-left {
+  top: calc(var(--table-overlay-handle-size) / -2);
+  left: calc(var(--table-overlay-handle-size) / -2);
+  cursor: nwse-resize;
+}
+
+.table-handle-bottom-right {
+  bottom: calc(var(--table-overlay-handle-size) / -2);
+  right: calc(var(--table-overlay-handle-size) / -2);
+  cursor: nwse-resize;
+}
