@@ -17,6 +17,14 @@ interface CellRect {
   cellPos: number
 }
 
+// 定义拖拽状态
+interface DragState {
+  startX: number
+  startY: number
+  handle: 'topLeft' | 'bottomRight'
+  cellPos?: number
+}
+
 // 定义插件状态
 interface TableOverlayState {
   activeCellPos: number | null
@@ -25,6 +33,7 @@ interface TableOverlayState {
   selectionBorderOverlay: HTMLElement | null
   topLeftHandle: HTMLElement | null
   bottomRightHandle: HTMLElement | null
+  dragging: DragState | null
 }
 
 /**
@@ -219,6 +228,7 @@ export function tableOverlayPlugin() {
           selectionBorderOverlay: null,
           topLeftHandle: null,
           bottomRightHandle: null,
+          dragging: null,
         }
       },
 
@@ -289,6 +299,69 @@ export function tableOverlayPlugin() {
       const tableWrapper = editorContainer?.querySelector('.tableWrapper')
       const handleScroll = () => updateTableOverlay(editorView)
 
+      // 添加手柄的鼠标按下事件处理
+      if (pluginState.topLeftHandle) {
+        pluginState.topLeftHandle.addEventListener('mousedown', (e: MouseEvent) => {
+          e.preventDefault()
+          e.stopPropagation()
+
+          // 获取当前选中的单元格
+          const selection = editorView.state.selection
+          if (!(selection instanceof CellSelection)) return
+
+          // 创建拖拽状态
+          const dragState: DragState = {
+            startX: e.clientX,
+            startY: e.clientY,
+            handle: 'topLeft',
+            cellPos: selection.$anchorCell.pos,
+          }
+
+          // 更新插件状态
+          editorView.dispatch(
+            editorView.state.tr.setMeta(tableOverlayPluginKey, {
+              ...pluginState,
+              dragging: dragState,
+            }),
+          )
+
+          // 添加拖拽时的样式
+          document.body.classList.add('resize-cursor')
+          pluginState.selectionBorderOverlay.classList.add('dragging')
+        })
+      }
+
+      if (pluginState.bottomRightHandle) {
+        pluginState.bottomRightHandle.addEventListener('mousedown', (e: MouseEvent) => {
+          e.preventDefault()
+          e.stopPropagation()
+
+          // 获取当前选中的单元格
+          const selection = editorView.state.selection
+          if (!(selection instanceof CellSelection)) return
+
+          // 创建拖拽状态
+          const dragState: DragState = {
+            startX: e.clientX,
+            startY: e.clientY,
+            handle: 'bottomRight',
+            cellPos: selection.$headCell.pos,
+          }
+
+          // 更新插件状态
+          editorView.dispatch(
+            editorView.state.tr.setMeta(tableOverlayPluginKey, {
+              ...pluginState,
+              dragging: dragState,
+            }),
+          )
+
+          // 添加拖拽时的样式
+          document.body.classList.add('resize-cursor')
+          pluginState.selectionBorderOverlay.classList.add('dragging')
+        })
+      }
+
       return {
         update(view) {
           updateTableOverlay(view) // 使用导出的函数
@@ -311,6 +384,7 @@ export function tableOverlayPlugin() {
               selectionBorderOverlay: null,
               topLeftHandle: null,
               bottomRightHandle: null,
+              dragging: null,
             }),
           )
         },
@@ -319,20 +393,130 @@ export function tableOverlayPlugin() {
 
     props: {
       handleDOMEvents: {
-        mousedown(view, event) {
-          const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
-          if (!pos) return false
-          const $cell = cellAround(view.state.doc.resolve(pos.pos))
-          if ($cell) {
-            view.dispatch(
-              view.state.tr.setMeta(tableOverlayPluginKey, {
-                activeCellPos: $cell.pos,
-              }),
-            )
+        // mousedown(view, event) {
+        //   const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
+        //   if (!pos) return false
+        //   const $cell = cellAround(view.state.doc.resolve(pos.pos))
+        //   if ($cell) {
+        //     view.dispatch(
+        //       view.state.tr.setMeta(tableOverlayPluginKey, {
+        //         activeCellPos: $cell.pos,
+        //       }),
+        //     )
+        //   }
+        // },
+        mousemove(view, event) {
+          // 处理拖拽状态
+          const state = tableOverlayPluginKey.getState(view.state)
+          if (state && state.dragging) {
+            // 获取拖拽的距离
+            const deltaX = event.clientX - state.dragging.startX
+            const deltaY = event.clientY - state.dragging.startY
+
+            // 获取当前选中的单元格
+            const selection = view.state.selection
+            if (!(selection instanceof CellSelection)) return false
+
+            // 根据拖拽方向和距离实时更新选择区域
+            if (state.dragging.handle === 'topLeft') {
+              // 向左上方向拖拽，选择应该向左上扩展
+              handleTopLeftDrag(view, state, deltaX, deltaY)
+            } else {
+              // 向右下方向拖拽，选择应该向右下扩展
+              handleBottomRightDrag(view, state, deltaX, deltaY)
+            }
+
+            return true
           }
           return false
+        },
+        mouseup(view, event) {
+          // 处理拖拽结束
+          const state = tableOverlayPluginKey.getState(view.state)
+          if (!state || !state.dragging) return false
+
+          // 重置拖拽状态
+          view.dispatch(
+            view.state.tr.setMeta(tableOverlayPluginKey, {
+              ...state,
+              dragging: null,
+            }),
+          )
+          document.body.classList.remove('resize-cursor')
+          if (state.selectionBorderOverlay) {
+            state.selectionBorderOverlay.classList.remove('dragging')
+          }
+
+          return true
         },
       },
     },
   })
+}
+
+// 获取鼠标位置下方的单元格
+function getCellAtCoords(view: EditorView, x: number, y: number) {
+  const pos = view.posAtCoords({ left: x, top: y })
+  if (!pos) return null
+  return cellAround(view.state.doc.resolve(pos.pos))
+}
+
+// 处理左上角拖拽
+function handleTopLeftDrag(view: EditorView, state: TableOverlayState, deltaX: number, deltaY: number) {
+  if (!state.dragging) return
+
+  const selection = view.state.selection
+  if (!(selection instanceof CellSelection)) return
+
+  // 获取当前鼠标坐标下的单元格
+  const mousePos = {
+    x: state.dragging.startX + deltaX,
+    y: state.dragging.startY + deltaY,
+  }
+
+  // 获取鼠标下方的单元格
+  const $cellAtMouse = getCellAtCoords(view, mousePos.x, mousePos.y)
+  if (!$cellAtMouse) return
+
+  // 确保单元格在同一个表格内
+  if (!$cellAtMouse.node(-1).eq(selection.$headCell.node(-1))) return
+
+  // 如果是同一个单元格，不做处理
+  if ($cellAtMouse.pos === selection.$anchorCell.pos) return
+
+  // 创建新的选择
+  const newCellSelection = new CellSelection($cellAtMouse, selection.$headCell)
+
+  // 应用新的选择
+  view.dispatch(view.state.tr.setSelection(newCellSelection))
+}
+
+// 处理右下角拖拽
+function handleBottomRightDrag(view: EditorView, state: TableOverlayState, deltaX: number, deltaY: number) {
+  if (!state.dragging) return
+
+  const selection = view.state.selection
+  if (!(selection instanceof CellSelection)) return
+
+  // 获取当前鼠标坐标下的单元格
+  const mousePos = {
+    x: state.dragging.startX + deltaX,
+    y: state.dragging.startY + deltaY,
+  }
+
+  // 获取鼠标下方的单元格
+  const $cellAtMouse = getCellAtCoords(view, mousePos.x, mousePos.y)
+  if (!$cellAtMouse) return
+
+  // 确保单元格在同一个表格内
+  if (!$cellAtMouse.node(-1).eq(selection.$anchorCell.node(-1))) return
+
+  // 如果是同一个单元格，不做处理
+  if ($cellAtMouse.pos === selection.$headCell.pos) return
+
+  // 创建新的选择
+  const newCellSelection = new CellSelection(selection.$anchorCell, $cellAtMouse)
+
+  // 应用新的选择
+  view.dispatch(view.state.tr.setSelection(newCellSelection))
 }
