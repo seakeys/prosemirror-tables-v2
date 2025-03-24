@@ -5,6 +5,7 @@ import { TableMap } from './tablemap'
 import { addColumnBefore, addColumnAfter, deleteColumn } from './commands'
 import { CellSelection } from './cellselection'
 import { highlightRowOrColumn } from './tableOverlayPlugin'
+import { columnResizingPluginKey } from './columnresizing'
 
 // 创建插件键
 export const tableColumnButtonPluginKey = new PluginKey('tableColumnButton')
@@ -243,6 +244,11 @@ export function tableColumnButtonPlugin() {
 
       return {
         update(view) {
+          const resizeState = columnResizingPluginKey.getState(view.state)
+          if (resizeState && resizeState.dragging) {
+            if (buttonContainer) buttonContainer.style.display = 'none'
+            return
+          }
           updateButtonPosition(view)
         },
         destroy() {
