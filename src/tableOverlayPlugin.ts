@@ -260,6 +260,22 @@ export function tableOverlayPlugin() {
 
       // 应用状态变更
       apply(tr, prev) {
+        // 检查选择是否变化
+        if (tr.selectionSet) {
+          const selection = tr.selection
+          // 如果是文本选择，尝试找到周围的单元格
+          if (!(selection instanceof CellSelection)) {
+            const $cell = cellAround(selection.$head)
+            if ($cell) {
+              // 更新activeCellPos而不改变选择类型
+              return {
+                ...prev,
+                activeCellPos: $cell.pos,
+              }
+            }
+          }
+        }
+
         // 检查插件的元数据更新
         const overlayMeta = tr.getMeta(tableOverlayPluginKey)
 
@@ -433,22 +449,6 @@ export function tableOverlayPlugin() {
 
     props: {
       handleDOMEvents: {
-        mousedown(view, event) {
-          const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
-          if (!pos) return false
-          const $cell = cellAround(view.state.doc.resolve(pos.pos))
-          if ($cell) {
-            // 当点击单元格时，更新活动单元格位置
-            view.dispatch(
-              view.state.tr.setMeta(tableOverlayPluginKey, {
-                activeCellPos: $cell.pos,
-              }),
-            )
-
-            // 可选：直接设置为 CellSelection
-            // ensureCellSelection(view);
-          }
-        },
         mousemove(view, event) {
           // 处理拖拽状态
           const state = tableOverlayPluginKey.getState(view.state)
