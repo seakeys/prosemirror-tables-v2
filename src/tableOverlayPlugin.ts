@@ -393,18 +393,18 @@ export function tableOverlayPlugin() {
 
     props: {
       handleDOMEvents: {
-        // mousedown(view, event) {
-        //   const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
-        //   if (!pos) return false
-        //   const $cell = cellAround(view.state.doc.resolve(pos.pos))
-        //   if ($cell) {
-        //     view.dispatch(
-        //       view.state.tr.setMeta(tableOverlayPluginKey, {
-        //         activeCellPos: $cell.pos,
-        //       }),
-        //     )
-        //   }
-        // },
+        mousedown(view, event) {
+          const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
+          if (!pos) return false
+          const $cell = cellAround(view.state.doc.resolve(pos.pos))
+          if ($cell) {
+            view.dispatch(
+              view.state.tr.setMeta(tableOverlayPluginKey, {
+                activeCellPos: $cell.pos,
+              }),
+            )
+          }
+        },
         mousemove(view, event) {
           // 处理拖拽状态
           const state = tableOverlayPluginKey.getState(view.state)
