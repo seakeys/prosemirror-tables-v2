@@ -34,10 +34,10 @@ export const handleKeyDown = keydownHandler({
   'Shift-ArrowUp': shiftArrow('vert', -1),
   'Shift-ArrowDown': shiftArrow('vert', 1),
 
-  Backspace: deleteCellSelection,
-  'Mod-Backspace': deleteCellSelection,
+  // Backspace: deleteCellSelection,
+  // 'Mod-Backspace': deleteCellSelection,
   Delete: deleteCellSelection,
-  'Mod-Delete': deleteCellSelection,
+  // 'Mod-Delete': deleteCellSelection,
 })
 
 /**
