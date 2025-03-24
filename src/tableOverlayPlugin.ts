@@ -285,15 +285,21 @@ export function tableOverlayPlugin() {
       const editorContainer = editorView.dom.parentNode
       if (editorContainer) editorContainer.appendChild(pluginState.overlayContainer)
 
+      // scroll 更新表格覆盖层
+      const tableWrapper = editorContainer?.querySelector('.tableWrapper')
+      const handleScroll = () => updateTableOverlay(editorView)
+
       return {
         update(view) {
           updateTableOverlay(view) // 使用导出的函数
+          tableWrapper?.addEventListener('scroll', handleScroll)
         },
         destroy() {
           // 清理
           const state = tableOverlayPluginKey.getState(editorView.state)
           if (state.overlayContainer && state.overlayContainer.parentNode) {
             state.overlayContainer.parentNode.removeChild(state.overlayContainer)
+            tableWrapper?.removeEventListener('scroll', handleScroll)
           }
 
           // 将状态中的DOM引用设为null
