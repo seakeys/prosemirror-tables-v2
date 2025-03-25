@@ -67,6 +67,9 @@ devDependencies:
   prosemirror-test-builder:
     specifier: ^1.1.1
     version: 1.1.1
+  terser:
+    specifier: ^5.39.0
+    version: 5.39.0
   tsup:
     specifier: ^8.3.6
     version: 8.4.0(typescript@5.8.2)
@@ -75,10 +78,13 @@ devDependencies:
     version: 5.8.2
   vite:
     specifier: ^6.0.11
-    version: 6.2.1
+    version: 6.2.1(terser@5.39.0)
+  vite-plugin-singlefile:
+    specifier: 2.1.0
+    version: 2.1.0(rollup@4.35.0)(vite@6.2.1)
   vitest:
     specifier: ^3.0.4
-    version: 3.0.8(happy-dom@16.8.1)
+    version: 3.0.8(happy-dom@16.8.1)(terser@5.39.0)
 
 packages:
 
@@ -395,6 +401,13 @@ packages:
   /@jridgewell/set-array@1.2.1:
     resolution: {integrity: sha512-R8gLRTZeyp03ymzP/6Lil/28tGeGEzhx1q2k703KGWRAI1VdvPIXdG70VJc2pAMw3NA6JKL5hhFu1sJX0Mnn/A==}
     engines: {node: '>=6.0.0'}
+    dev: true
+
+  /@jridgewell/source-map@0.3.6:
+    resolution: {integrity: sha512-1ZJTZebgqllO79ue2bm3rIGud/bOe0pP5BjSRCRxxYkEZS8STV7zN84UBbiYu7jy+eCKSnVIUgoWWE/tt+shMQ==}
+    dependencies:
+      '@jridgewell/gen-mapping': 0.3.8
+      '@jridgewell/trace-mapping': 0.3.25
     dev: true
 
   /@jridgewell/sourcemap-codec@1.5.0:
@@ -782,7 +795,7 @@ packages:
       '@vitest/spy': 3.0.8
       estree-walker: 3.0.3
       magic-string: 0.30.17
-      vite: 6.2.1
+      vite: 6.2.1(terser@5.39.0)
     dev: true
 
   /@vitest/pretty-format@3.0.8:
@@ -906,6 +919,10 @@ packages:
       fill-range: 7.1.1
     dev: true
 
+  /buffer-from@1.1.2:
+    resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
+    dev: true
+
   /builddocs@1.0.8:
     resolution: {integrity: sha512-T9UlqaRhc7jHBWy2y9OmKR1sqzX6uPcZ3OBjyGjCfn2lPS9zxg28HF3X7ZTTg2UIeJLnczdER75ALKRVgQAZrQ==}
     hasBin: true
@@ -976,6 +993,10 @@ packages:
 
   /color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
+    dev: true
+
+  /commander@2.20.3:
+    resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
     dev: true
 
   /commander@4.1.1:
@@ -2040,6 +2061,18 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
+  /source-map-support@0.5.21:
+    resolution: {integrity: sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w==}
+    dependencies:
+      buffer-from: 1.1.2
+      source-map: 0.6.1
+    dev: true
+
+  /source-map@0.6.1:
+    resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
+    engines: {node: '>=0.10.0'}
+    dev: true
+
   /source-map@0.8.0-beta.0:
     resolution: {integrity: sha512-2ymg6oRBpebeZi9UUNsgQ89bhx01TcTkmNTGnNO88imTmbSgy4nfujrgVEFKWpMTEGA11EDkTt7mqObTPdigIA==}
     engines: {node: '>= 8'}
@@ -2111,6 +2144,17 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       has-flag: 4.0.0
+    dev: true
+
+  /terser@5.39.0:
+    resolution: {integrity: sha512-LBAhFyLho16harJoWMg/nZsQYgTrg5jXOn2nCYjRUcZZEdE3qa2zb8QEDRUGVZBW4rlazf2fxkg8tztybTaqWw==}
+    engines: {node: '>=10'}
+    hasBin: true
+    dependencies:
+      '@jridgewell/source-map': 0.3.6
+      acorn: 8.14.1
+      commander: 2.20.3
+      source-map-support: 0.5.21
     dev: true
 
   /text-table@0.2.0:
@@ -2267,7 +2311,7 @@ packages:
       punycode: 2.3.1
     dev: true
 
-  /vite-node@3.0.8:
+  /vite-node@3.0.8(terser@5.39.0):
     resolution: {integrity: sha512-6PhR4H9VGlcwXZ+KWCdMqbtG649xCPZqfI9j2PsK1FcXgEzro5bGHcVKFCTqPLaNKZES8Evqv4LwvZARsq5qlg==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
@@ -2276,7 +2320,7 @@ packages:
       debug: 4.4.0
       es-module-lexer: 1.6.0
       pathe: 2.0.3
-      vite: 6.2.1
+      vite: 6.2.1(terser@5.39.0)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -2292,7 +2336,19 @@ packages:
       - yaml
     dev: true
 
-  /vite@6.2.1:
+  /vite-plugin-singlefile@2.1.0(rollup@4.35.0)(vite@6.2.1):
+    resolution: {integrity: sha512-7tJo+UgZABlKpY/nubth/wxJ4+pUGREPnEwNOknxwl2MM0zTvF14KTU4Ln1lc140gjLLV5mjDrvuoquU7OZqCg==}
+    engines: {node: '>18.0.0'}
+    peerDependencies:
+      rollup: ^4.28.1
+      vite: ^5.4.11 || ^6.0.0
+    dependencies:
+      micromatch: 4.0.8
+      rollup: 4.35.0
+      vite: 6.2.1(terser@5.39.0)
+    dev: true
+
+  /vite@6.2.1(terser@5.39.0):
     resolution: {integrity: sha512-n2GnqDb6XPhlt9B8olZPrgMD/es/Nd1RdChF6CBD/fHW6pUyUTt2sQW2fPRX5GiD9XEa6+8A6A4f2vT6pSsE7Q==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
@@ -2335,11 +2391,12 @@ packages:
       esbuild: 0.25.1
       postcss: 8.5.3
       rollup: 4.35.0
+      terser: 5.39.0
     optionalDependencies:
       fsevents: 2.3.3
     dev: true
 
-  /vitest@3.0.8(happy-dom@16.8.1):
+  /vitest@3.0.8(happy-dom@16.8.1)(terser@5.39.0):
     resolution: {integrity: sha512-dfqAsNqRGUc8hB9OVR2P0w8PZPEckti2+5rdZip0WIz9WW0MnImJ8XiR61QhqLa92EQzKP2uPkzenKOAHyEIbA==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
@@ -2385,8 +2442,8 @@ packages:
       tinyexec: 0.3.2
       tinypool: 1.0.2
       tinyrainbow: 2.0.0
-      vite: 6.2.1
-      vite-node: 3.0.8
+      vite: 6.2.1(terser@5.39.0)
+      vite-node: 3.0.8(terser@5.39.0)
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - jiti

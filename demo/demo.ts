@@ -5,6 +5,7 @@ import 'prosemirror-gapcursor/style/gapcursor.css'
 import '../style/tables.css'
 import '../style/table-header-menu.css'
 import '../style/table-overlay.css'
+import '../style/table-add-buttons.css'
 
 import { EditorView } from 'prosemirror-view'
 import { EditorState } from 'prosemirror-state'

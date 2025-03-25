@@ -57,14 +57,16 @@
     "prosemirror-menu": "^1.2.4",
     "prosemirror-schema-basic": "^1.2.3",
     "prosemirror-test-builder": "^1.1.1",
+    "terser": "^5.39.0",
     "tsup": "^8.3.6",
     "typescript": "^5.7.3",
     "vite": "^6.0.11",
+    "vite-plugin-singlefile": "2.1.0",
     "vitest": "^3.0.4"
   },
   "scripts": {
     "dev": "vite demo",
-    "build_demo": "vite build demo",
+    "build_demo": "vite build demo -c vite.config.mjs --emptyOutDir",
     "typecheck": "tsc --noEmit",
     "test": "vitest --environment happy-dom",
     "build": "tsup",

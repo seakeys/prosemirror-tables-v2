@@ -1,0 +1,29 @@
+.table-add-row-button,
+.table-add-column-button {
+  position: absolute;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+}
+.table-add-row-button {
+  width: 100%;
+  height: 20px;
+  bottom: 15px;
+}
+.table-add-column-button {
+  width: 20px;
+  height: 100%;
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  top: 0;
+  right: 0;
+}
+.table-add-row-button:hover,
+.table-add-column-button:hover {
+  opacity: 1;
+}
