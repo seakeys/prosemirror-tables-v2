@@ -4,19 +4,24 @@
 
 <style>
   body {
-    max-width: 50em;
-    font-family: Georgia;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
   }
 
-  .ProseMirror-menubar-wrapper,
-  #editor {
-    border: 1px solid silver;
-    outline: none;
-    overflow: hidden;
+  .table-container {
+    max-width: 30em;
   }
 
   .ProseMirror {
-    padding: 20px;
+    font-size: 14px;
+    padding: 2px;
+  }
+
+  .ProseMirror:focus-visible {
+    outline: none;
   }
 
   .ProseMirror table {
@@ -26,38 +31,38 @@
   .ProseMirror th,
   .ProseMirror td {
     min-width: 1em;
-    border: 1px solid #ddd;
-    padding: 3px 5px;
-  }
-
-  .ProseMirror .tableWrapper {
-    margin: 1em 0;
+    border: 1px solid #dedede;
+    padding: 0px 5px;
   }
 
   .ProseMirror th {
     font-weight: bold;
     text-align: left;
-    background-color: #f5f5f5;
+    background-color: rgb(247, 246, 243);
+  }
+
+  .ProseMirror p {
+    margin: 7px 0;
   }
 </style>
 
-<h1>Table demo</h1>
+<main class="table-container">
+  <div style="display: none" id="content">
+    <table>
+      <tr>
+        <td>One</td>
+        <td>Two</td>
+        <td>Three</td>
+      </tr>
+      <tr>
+        <td>Four</td>
+        <td>Five</td>
+        <td>Six</td>
+      </tr>
+    </table>
+  </div>
 
-<div style="display: none" id="content">
-  <table>
-    <tr>
-      <td>One</td>
-      <td>Two</td>
-      <td>Three</td>
-    </tr>
-    <tr>
-      <td>Four</td>
-      <td>Five</td>
-      <td>Six</td>
-    </tr>
-  </table>
-</div>
-
-<div id="editor"></div>
+  <div id="editor"></div>
+</main>
 
 <script type="module" src="./demo.ts"></script>

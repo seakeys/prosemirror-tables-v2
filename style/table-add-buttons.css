@@ -1,29 +1,71 @@
-/* .table-add-row-button,
-.table-add-column-button {
+.table-add-row-button,
+.table-add-column-button,
+.table-add-row-column-button {
   position: absolute;
-  cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 0.2s;
-  z-index: 10;
+  color: rgba(55, 53, 47, 0.45);
+  user-select: none;
+  transition: opacity 150ms 50ms;
+  opacity: 1;
+}
+
+.table-add-row-button {
+  height: 20px;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  cursor: row-resize;
+}
+
+.table-add-row-button-children {
+  background: rgba(55, 53, 47, 0.06);
+  height: 18px;
+  line-height: 18px;
+  margin-top: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #000;
+  border-radius: 4px;
+  pointer-events: none;
 }
-.table-add-row-button {
-  width: 100%;
-  height: 20px;
-  bottom: 15px;
-}
+
 .table-add-column-button {
   width: 20px;
-  height: 100%;
-  writing-mode: vertical-lr;
-  text-orientation: mixed;
   top: 0;
-  right: 0;
+  bottom: 0;
+  right: -20px;
+  cursor: col-resize;
 }
-.table-add-row-button:hover,
-.table-add-column-button:hover {
-  opacity: 1;
-} */
+
+.table-add-column-button-children {
+  background: rgba(55, 53, 47, 0.06);
+  width: 18px;
+  height: 100%;
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.table-add-row-column-button {
+  width: 20px;
+  height: 20px;
+  right: -20px;
+  bottom: -20px;
+  cursor: nwse-resize;
+}
+
+.table-add-row-column-button-children {
+  background: rgba(55, 53, 47, 0.06);
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  margin-top: 2px;
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  pointer-events: none;
+}

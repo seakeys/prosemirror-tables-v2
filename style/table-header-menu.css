@@ -1,7 +1,7 @@
 /* 菜单按钮 */
 .table-header-menu {
   position: absolute;
-  top: 2px;
+  top: -40px;
   right: 2px;
   z-index: 5;
   background-color: #f0f0f0;
