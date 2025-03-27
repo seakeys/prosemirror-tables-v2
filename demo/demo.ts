@@ -5,7 +5,8 @@ import 'prosemirror-gapcursor/style/gapcursor.css'
 import '../style/tables.css'
 import '../style/table-header-menu.css'
 import '../style/table-overlay.css'
-import '../style/table-add-buttons.css'
+import '../style/table-bottom-right-buttons.css'
+import '../style/table-top-left-buttons.css'
 
 import { EditorView } from 'prosemirror-view'
 import { EditorState } from 'prosemirror-state'
@@ -20,6 +21,7 @@ import { tableRowButtonPlugin } from '../src/tableRowButtonPlugin'
 import { tableColumnButtonPlugin } from '../src/tableColumnButtonPlugin'
 import { tableOverlayPlugin } from '../src/tableOverlayPlugin'
 import { tableAddCellButtonPlugin } from '../src/tableAddCellButtonPlugin'
+import { tableCellButtonPlugin } from '../src/tableCellButtonPlugin'
 
 const schema = new Schema({
   nodes: baseSchema.spec.nodes.append(
@@ -55,6 +57,7 @@ let state = EditorState.create({
     tableColumnButtonPlugin(),
     tableOverlayPlugin(),
     tableAddCellButtonPlugin(),
+    tableCellButtonPlugin(),
     tableEditing(),
     keymap({
       Tab: goToNextCell(1),
