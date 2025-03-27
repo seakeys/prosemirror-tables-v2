@@ -2,6 +2,7 @@ import { Plugin, PluginKey } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { TableMap } from './tablemap'
 import { cellAround } from './util'
+import { addColumnToFirstTable, addRowAndColumnToFirstTable, addRowToFirstTable } from './commands'
 
 export const tableEdgeButtonsKey = new PluginKey('simpleTableButton')
 
@@ -47,7 +48,7 @@ export function tableAddCellButtonPlugin() {
       rowButtonChildren.innerHTML = '+'
       pluginState.rowButton.appendChild(rowButtonChildren)
       pluginState.rowButton.className = 'table-add-row-button'
-      const handleRowMousedown = () => alert('表格按钮被点击了1！')
+      const handleRowMousedown = () => addRowToFirstTable(editorView.state, editorView.dispatch)
       pluginState.rowButton.addEventListener('mousedown', handleRowMousedown)
       const handleRowMouseOver = () => pluginState.rowButton?.style.setProperty('opacity', '1')
       pluginState.rowButton.addEventListener('mousemove', handleRowMouseOver)
@@ -59,7 +60,7 @@ export function tableAddCellButtonPlugin() {
       colButtonChildren.innerHTML = '+'
       pluginState.colButton.appendChild(colButtonChildren)
       pluginState.colButton.className = 'table-add-column-button'
-      const handleColMousedown = () => alert('表格按钮被点击了1！')
+      const handleColMousedown = () => addColumnToFirstTable(editorView.state, editorView.dispatch)
       pluginState.colButton.addEventListener('mousedown', handleColMousedown)
       const handleColMouseOver = () => pluginState.colButton?.style.setProperty('opacity', '1')
       pluginState.colButton.addEventListener('mousemove', handleColMouseOver)
@@ -71,8 +72,13 @@ export function tableAddCellButtonPlugin() {
       rowColButtonChildren.innerHTML = '+'
       pluginState.rowColButton.appendChild(rowColButtonChildren)
       pluginState.rowColButton.className = 'table-add-row-column-button'
-      const handleRowColMousedown = () => alert('表格按钮被点击了1！')
+      const handleRowColMousedown = () => rowColButtonChildren?.style.setProperty('background', 'rgba(55, 53, 47, 0.2)')
+      const handleRowColMouseup = () => {
+        addRowAndColumnToFirstTable(editorView.state, editorView.dispatch)
+        rowColButtonChildren?.style.removeProperty('background')
+      }
       pluginState.rowColButton.addEventListener('mousedown', handleRowColMousedown)
+      pluginState.rowColButton.addEventListener('mouseup', handleRowColMouseup)
       const handleRowColMouseOver = () => pluginState.rowColButton?.style.setProperty('opacity', '1')
       pluginState.rowColButton.addEventListener('mousemove', handleRowColMouseOver)
 
@@ -101,6 +107,8 @@ export function tableAddCellButtonPlugin() {
           pluginState.rowButton.removeEventListener('mousedown', handleRowMousedown)
           pluginState.colButton.removeEventListener('mousedown', handleColMousedown)
           pluginState.rowColButton.removeEventListener('mousedown', handleRowColMousedown)
+
+          pluginState.rowColButton.removeEventListener('mouseup', handleRowColMouseup)
 
           pluginState.rowButton.removeEventListener('mousemove', handleRowMouseOver)
           pluginState.colButton.removeEventListener('mousemove', handleColMouseOver)

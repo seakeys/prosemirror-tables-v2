@@ -722,3 +722,137 @@ export function deleteCellSelection(state: EditorState, dispatch?: (tr: Transact
   }
   return true
 }
+
+/**
+ * 在文档中查找第一个表格
+ */
+function findFirstTable(state: EditorState): { tablePos: number; tableNode: Node } | null {
+  interface TableInfo {
+    tablePos: number
+    tableNode: Node
+  }
+
+  let foundTable: TableInfo | null = null
+
+  state.doc.descendants((node, pos) => {
+    if (foundTable) return false // 已找到表格，停止遍历
+    if (node.type.spec.tableRole === 'table') {
+      foundTable = { tablePos: pos, tableNode: node }
+      return false // 找到表格后停止遍历
+    }
+    return true // 继续遍历
+  })
+
+  return foundTable
+}
+
+/**
+ * 在文档中的第一个表格末尾添加一行
+ */
+export function addRowToFirstTable(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  const tableInfo = findFirstTable(state)
+
+  if (!tableInfo) return false
+
+  const { tablePos, tableNode } = tableInfo
+  const map = TableMap.get(tableNode)
+
+  const rect = {
+    tableStart: tablePos + 1,
+    table: tableNode,
+    map: map,
+    left: 0,
+    right: map.width,
+    top: map.height,
+    bottom: map.height,
+  }
+
+  if (dispatch) {
+    dispatch(addRow(state.tr, rect, map.height))
+  }
+
+  return true
+}
+
+/**
+ * 在文档中的第一个表格末尾添加一列
+ */
+export function addColumnToFirstTable(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  // 查找文档中的第一个表格
+  const tableInfo = findFirstTable(state)
+
+  if (!tableInfo) return false
+
+  const { tablePos, tableNode } = tableInfo
+  const map = TableMap.get(tableNode)
+
+  // 构造addColumn需要的rect参数
+  const rect = {
+    tableStart: tablePos + 1,
+    table: tableNode,
+    map: map,
+    left: 0,
+    right: map.width,
+    top: 0,
+    bottom: map.height,
+  }
+
+  // 调用addColumn函数在表格最右侧添加列
+  if (dispatch) {
+    dispatch(addColumn(state.tr, rect, map.width))
+  }
+
+  return true
+}
+
+/**
+ * 在文档中的第一个表格末尾同时添加行和列（使用一个事务）
+ */
+export function addRowAndColumnToFirstTable(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  // 查找文档中的第一个表格
+  const tableInfo = findFirstTable(state)
+
+  if (!tableInfo) return false
+
+  const { tablePos, tableNode } = tableInfo
+  const map = TableMap.get(tableNode)
+
+  // 构造需要的rect参数
+  const rect = {
+    tableStart: tablePos + 1,
+    table: tableNode,
+    map: map,
+    left: 0,
+    right: map.width,
+    top: 0,
+    bottom: map.height,
+  }
+
+  if (dispatch) {
+    // 创建事务
+    let tr = state.tr
+
+    // 第一步：添加列
+    tr = addColumn(tr, rect, map.width)
+
+    // 更新表格信息（因为添加列后表格结构已变化）
+    const newTableNode = tr.doc.nodeAt(tablePos)
+    if (!newTableNode) return false
+
+    const newMap = TableMap.get(newTableNode)
+    const newRect = {
+      ...rect,
+      table: newTableNode,
+      map: newMap,
+      right: newMap.width,
+    }
+
+    // 第二步：添加行
+    tr = addRow(tr, newRect, newMap.height)
+
+    // 分发事务
+    dispatch(tr)
+  }
+
+  return true
+}
