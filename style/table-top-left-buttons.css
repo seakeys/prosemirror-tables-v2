@@ -73,25 +73,38 @@
 /* 菜单样式 */
 .table-cell-menu {
   position: absolute;
-  background-color: white;
-  border-radius: 4px;
-  padding: 4px 0;
+  padding: 5px;
   pointer-events: auto;
   width: 220px;
-  height: 138px;
+  height: 150px;
   background: #fcfcfc;
   box-shadow: 0px 3px 10px 1px rgba(0, 0, 0, 0.3);
-  border-radius: 8px 8px 8px 8px;
+  border-radius: 8px;
   border: 1px solid #c6c6c6;
 }
 
 /* 菜单项样式 */
 .table-cell-menu-item {
-  padding: 6px 12px;
+  padding: 4px 8px;
   cursor: pointer;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .table-cell-menu-item:hover {
-  background-color: #f0f0f0;
+  background: #ededed;
+  border-radius: 5px 5px 5px 5px;
+}
+
+.menu-item-text {
+  padding-left: 9px;
+  font-size: 13px;
+}
+
+.menu-item-shortcut {
+  font-size: 11px;
+  float: right;
+  color: #bfc3cb;
 }

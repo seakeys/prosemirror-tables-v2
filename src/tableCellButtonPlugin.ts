@@ -10,6 +10,8 @@ import { CellSelection } from './cellselection'
 // 菜单项接口定义
 interface MenuItem {
   text: string
+  icon: string
+  shortcut: string // 快捷键
   command: (state: EditorState, dispatch?: (tr: Transaction) => void) => boolean
   selectAfter: (() => number) | null
 }
@@ -184,17 +186,81 @@ function showMenu(view: EditorView, button: HTMLElement, type: 'row' | 'column',
   if (type === 'row') {
     // 行菜单项
     const menuItems: MenuItem[] = [
-      { text: '在前插入行', command: addRowBefore, selectAfter: () => row },
-      { text: '在后插入行', command: addRowAfter, selectAfter: () => row + 1 },
-      { text: '删除行', command: deleteRow, selectAfter: null },
+      {
+        text: '在前插入行',
+        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12H21M12 3V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        shortcut: 'Alt+↑',
+        command: addRowBefore,
+        selectAfter: () => row,
+      },
+      {
+        text: '在后插入行',
+        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12H21M12 3V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        shortcut: 'Alt+↓',
+        command: addRowAfter,
+        selectAfter: () => row + 1,
+      },
+      {
+        text: '创建副本',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><g transform="translate(12) rotate(90)"><path class="a" d="M10,1a1,1,0,0,1,1,1V7a1,1,0,0,1-1,1H5A1,1,0,0,1,4,7V2A1,1,0,0,1,5,1h5m0-1H5A2,2,0,0,0,3,2V7A2,2,0,0,0,5,9h5a2,2,0,0,0,2-2V2a2,2,0,0,0-2-2Z"/><path class="a" d="M7,11H2a1,1,0,0,1-1-1V5A1,1,0,0,1,2,4V3A2,2,0,0,0,0,5v5a2,2,0,0,0,2,2H7a2,2,0,0,0,2-2H8A1,1,0,0,1,7,11Z"/></g></svg>',
+        shortcut: 'Ctrl+D',
+        command: deleteColumn,
+        selectAfter: null,
+      },
+      {
+        text: '清除内容',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><g transform="translate(1490.264 -3155.368)"><path class="a" d="M-1484.264,3155.368a6,6,0,0,0-6,6,6,6,0,0,0,6,6,6,6,0,0,0,6-6A6,6,0,0,0-1484.264,3155.368Zm2.121,7.413a.5.5,0,0,1,0,.707.5.5,0,0,1-.707,0l-1.413-1.413-1.415,1.415a.5.5,0,0,1-.707,0,.5.5,0,0,1,0-.708l1.415-1.414-1.415-1.415a.5.5,0,0,1,0-.707.5.5,0,0,1,.707,0l1.415,1.415,1.413-1.414a.5.5,0,0,1,.707,0,.5.5,0,0,1,0,.707l-1.413,1.414Z"/></g></svg>',
+        shortcut: 'Delete',
+        command: deleteColumn,
+        selectAfter: null,
+      },
+      {
+        text: '删除',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="11.408" height="12" viewBox="0 0 11.408 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><path class="a" d="M3.117,2.693h.937V1.432A.539.539,0,0,1,4.644.878H6.753a.539.539,0,0,1,.589.554V2.693h.937V1.373A1.31,1.31,0,0,0,6.818,0H4.578A1.31,1.31,0,0,0,3.117,1.373ZM.442,3.164h10.53a.445.445,0,0,0,.436-.448.44.44,0,0,0-.436-.442H.442a.445.445,0,0,0,0,.89ZM3.005,12h5.4a1.375,1.375,0,0,0,1.45-1.39l.412-7.557H9.322l-.4,7.457a.6.6,0,0,1-.613.6H3.088a.605.605,0,0,1-.607-.6L2.063,3.052H1.137l.419,7.563A1.363,1.363,0,0,0,3.005,12Zm.954-1.9a.333.333,0,0,0,.365-.348L4.142,4.573a.341.341,0,0,0-.365-.342.333.333,0,0,0-.366.348l.177,5.176A.344.344,0,0,0,3.96,10.1Zm1.744,0a.351.351,0,0,0,.383-.348V4.578A.351.351,0,0,0,5.7,4.231a.346.346,0,0,0-.377.348V9.755A.346.346,0,0,0,5.7,10.1Zm1.75,0a.342.342,0,0,0,.365-.348L8,4.578a.333.333,0,0,0-.366-.348.342.342,0,0,0-.365.348L7.089,9.755A.333.333,0,0,0,7.454,10.1Z" transform="translate(0 0)"/></svg>',
+        shortcut: 'Alt+Del',
+        command: deleteRow,
+        selectAfter: null,
+      },
     ]
     fillMenuItems(view, menuItems)
   } else {
     // 列菜单项
     const menuItems: MenuItem[] = [
-      { text: '在左插入列', command: addColumnBefore, selectAfter: () => col },
-      { text: '在右插入列', command: addColumnAfter, selectAfter: () => col + 1 },
-      { text: '删除列', command: deleteColumn, selectAfter: null },
+      {
+        text: '在左插入列',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="11.877" height="9.194" viewBox="0 0 11.877 9.194"><defs><style>.a,.b{fill:none;}.b{stroke:#5f5f5f;}.c,.d{stroke:none;}.d{fill:#5f5f5f;}</style></defs><g transform="translate(-1609.758 -683.465)"><g class="a" transform="translate(1610.635 687.562)"><path class="c" d="M0,0H11V1H0Z"/><path class="d" d="M 0 0 L 11 0 L 11 1 L 0 1 L 0 0 Z"/></g><path class="b" d="M6,0H0V6" transform="translate(1610.465 688.061) rotate(-45)"/></g></svg>',
+        shortcut: 'Alt+←',
+        command: addColumnBefore,
+        selectAfter: () => col,
+      },
+      {
+        text: '在右插入列',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="11.877" height="9.194" viewBox="0 0 11.877 9.194"><defs><style>.a,.b{fill:none;}.b{stroke:#5f5f5f;}.c,.d{stroke:none;}.d{fill:#5f5f5f;}</style></defs><g transform="translate(1621.635 692.659) rotate(180)"><g class="a" transform="translate(1610.635 687.562)"><path class="c" d="M0,0H11V1H0Z"/><path class="d" d="M 0 0 L 11 0 L 11 1 L 0 1 L 0 0 Z"/></g><path class="b" d="M6,0H0V6" transform="translate(1610.465 688.061) rotate(-45)"/></g></svg>',
+        shortcut: 'Alt+→',
+        command: addColumnAfter,
+        selectAfter: () => col + 1,
+      },
+      {
+        text: '创建副本',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><g transform="translate(12) rotate(90)"><path class="a" d="M10,1a1,1,0,0,1,1,1V7a1,1,0,0,1-1,1H5A1,1,0,0,1,4,7V2A1,1,0,0,1,5,1h5m0-1H5A2,2,0,0,0,3,2V7A2,2,0,0,0,5,9h5a2,2,0,0,0,2-2V2a2,2,0,0,0-2-2Z"/><path class="a" d="M7,11H2a1,1,0,0,1-1-1V5A1,1,0,0,1,2,4V3A2,2,0,0,0,0,5v5a2,2,0,0,0,2,2H7a2,2,0,0,0,2-2H8A1,1,0,0,1,7,11Z"/></g></svg>',
+        shortcut: 'Ctrl+D',
+        command: deleteColumn,
+        selectAfter: null,
+      },
+      {
+        text: '清除内容',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><g transform="translate(1490.264 -3155.368)"><path class="a" d="M-1484.264,3155.368a6,6,0,0,0-6,6,6,6,0,0,0,6,6,6,6,0,0,0,6-6A6,6,0,0,0-1484.264,3155.368Zm2.121,7.413a.5.5,0,0,1,0,.707.5.5,0,0,1-.707,0l-1.413-1.413-1.415,1.415a.5.5,0,0,1-.707,0,.5.5,0,0,1,0-.708l1.415-1.414-1.415-1.415a.5.5,0,0,1,0-.707.5.5,0,0,1,.707,0l1.415,1.415,1.413-1.414a.5.5,0,0,1,.707,0,.5.5,0,0,1,0,.707l-1.413,1.414Z"/></g></svg>',
+        shortcut: 'Delete',
+        command: deleteColumn,
+        selectAfter: null,
+      },
+      {
+        text: '删除',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="11.408" height="12" viewBox="0 0 11.408 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><path class="a" d="M3.117,2.693h.937V1.432A.539.539,0,0,1,4.644.878H6.753a.539.539,0,0,1,.589.554V2.693h.937V1.373A1.31,1.31,0,0,0,6.818,0H4.578A1.31,1.31,0,0,0,3.117,1.373ZM.442,3.164h10.53a.445.445,0,0,0,.436-.448.44.44,0,0,0-.436-.442H.442a.445.445,0,0,0,0,.89ZM3.005,12h5.4a1.375,1.375,0,0,0,1.45-1.39l.412-7.557H9.322l-.4,7.457a.6.6,0,0,1-.613.6H3.088a.605.605,0,0,1-.607-.6L2.063,3.052H1.137l.419,7.563A1.363,1.363,0,0,0,3.005,12Zm.954-1.9a.333.333,0,0,0,.365-.348L4.142,4.573a.341.341,0,0,0-.365-.342.333.333,0,0,0-.366.348l.177,5.176A.344.344,0,0,0,3.96,10.1Zm1.744,0a.351.351,0,0,0,.383-.348V4.578A.351.351,0,0,0,5.7,4.231a.346.346,0,0,0-.377.348V9.755A.346.346,0,0,0,5.7,10.1Zm1.75,0a.342.342,0,0,0,.365-.348L8,4.578a.333.333,0,0,0-.366-.348.342.342,0,0,0-.365.348L7.089,9.755A.333.333,0,0,0,7.454,10.1Z" transform="translate(0 0)"/></svg>',
+        shortcut: 'Alt+Shift+Del',
+        command: deleteColumn,
+        selectAfter: null,
+      },
     ]
     fillMenuItems(view, menuItems)
   }
@@ -228,7 +294,33 @@ function fillMenuItems(view: EditorView, menuItems: MenuItem[]): void {
   menuItems.forEach((item: MenuItem) => {
     const menuItem: HTMLDivElement = document.createElement('div')
     menuItem.className = 'table-cell-menu-item'
-    menuItem.textContent = item.text
+
+    // 创建图标和文本的父容器
+    const contentContainer = document.createElement('div')
+    contentContainer.className = 'menu-item-content'
+
+    // 创建图标容器
+    const iconContainer = document.createElement('span')
+    iconContainer.className = 'menu-item-icon'
+    iconContainer.innerHTML = item.icon
+
+    // 创建文本容器
+    const textContainer = document.createElement('span')
+    textContainer.className = 'menu-item-text'
+    textContainer.textContent = item.text
+
+    // 将图标和文本添加到父容器
+    contentContainer.appendChild(iconContainer)
+    contentContainer.appendChild(textContainer)
+
+    // 创建快捷键容器
+    const shortcutContainer = document.createElement('span')
+    shortcutContainer.className = 'menu-item-shortcut'
+    shortcutContainer.textContent = item.shortcut
+
+    // 添加内容父容器和快捷键到菜单项
+    menuItem.appendChild(contentContainer)
+    menuItem.appendChild(shortcutContainer)
 
     menuItem.addEventListener('mouseenter', () => menuItem.style.setProperty('backgroundColor', '#f0f0f0'))
 
