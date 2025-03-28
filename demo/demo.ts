@@ -17,8 +17,6 @@ import { keymap } from 'prosemirror-keymap'
 import { goToNextCell } from '../src'
 import { tableEditing, columnResizing, tableNodes, fixTables } from '../src'
 import { tableHeaderMenuPlugin } from '../src/tableHeaderMenu'
-// import { tableRowButtonPlugin } from '../src/tableRowButtonPlugin'
-// import { tableColumnButtonPlugin } from '../src/tableColumnButtonPlugin'
 import { tableOverlayPlugin } from '../src/tableOverlayPlugin'
 import { tableAddCellButtonPlugin } from '../src/tableAddCellButtonPlugin'
 import { tableCellButtonPlugin } from '../src/tableCellButtonPlugin'
@@ -53,8 +51,6 @@ let state = EditorState.create({
   plugins: [
     columnResizing(),
     tableHeaderMenuPlugin(),
-    // tableRowButtonPlugin(),
-    // tableColumnButtonPlugin(),
     tableOverlayPlugin(),
     tableAddCellButtonPlugin(),
     tableCellButtonPlugin(),
