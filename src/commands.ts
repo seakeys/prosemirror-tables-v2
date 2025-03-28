@@ -899,35 +899,64 @@ export function duplicateColumn(state: EditorState, dispatch?: (tr: Transaction)
   if (!isInTable(state)) return false
 
   if (dispatch) {
-    const rect = selectedRect(state)
-    let tr = state.tr
+    // 1. 先找到表格和选择的列
+    const $cell = selectionCell(state)
+    const table = $cell.node(-1)
+    const tablePos = $cell.start(-1) - 1
+    const tableStart = $cell.start(-1)
+    const map = TableMap.get(table)
 
-    // 先添加新列
-    tr = addColumn(tr, rect, rect.right)
+    // 获取当前选择的单元格所在的列
+    const cellPos = $cell.pos - tableStart
+    const cellIndex = map.map.indexOf(cellPos)
+    const colIndex = cellIndex % map.width
 
-    // 获取新表格和映射
-    const tablePos = rect.tableStart - 1
-    const newTable = tr.doc.nodeAt(tablePos)
-    if (!newTable) return false
+    // 2. 构建重写的表格 - 创建带有新列的副本
+    const tr = state.tr
+    const rows = []
+
+    for (let row = 0; row < map.height; row++) {
+      const cells = []
+
+      for (let col = 0; col < map.width; col++) {
+        // 找到当前单元格
+        const cellPos = map.map[row * map.width + col]
+        const cell = table.nodeAt(cellPos)
+
+        if (!cell) continue
+
+        // 添加原始单元格
+        cells.push(cell)
+
+        // 在选择列后添加副本
+        if (col === colIndex) {
+          // 创建相同类型和属性的单元格，使用相同的内容
+          cells.push(cell.type.create(cell.attrs, cell.content))
+        }
+      }
+
+      // 创建新行
+      const rowNode = table.child(row)
+      rows.push(rowNode.type.create(rowNode.attrs, Fragment.from(cells)))
+    }
+
+    // 创建新表格
+    const newTable = table.type.create(table.attrs, Fragment.from(rows))
+
+    // 3. 用新表格替换旧表格
+    tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable)
+
+    // 4. 保持原来的选择状态 - 选择整列
     const newMap = TableMap.get(newTable)
 
-    // 复制原列内容到新列
-    for (let row = 0; row < rect.map.height; row++) {
-      const origCellPos = rect.map.map[row * rect.map.width + rect.left]
-      const origCell = rect.table.nodeAt(origCellPos)
+    // 映射到新表格中的位置
+    const newTopCellPos = newMap.map[colIndex]
+    const newBottomCellPos = newMap.map[(newMap.height - 1) * newMap.width + colIndex]
 
-      if (origCell) {
-        const newCol = rect.right
-        const newCellPos = newMap.map[row * newMap.width + newCol]
-
-        // 复制单元格内容
-        tr.replace(
-          rect.tableStart + newCellPos + 1, // 新单元格内容的开始位置
-          rect.tableStart + newCellPos + newTable.nodeAt(newCellPos)!.nodeSize - 1, // 新单元格内容的结束位置
-          new Slice(origCell.content, 0, 0), // 原单元格内容的切片
-        )
-      }
-    }
+    // 创建单元格选择
+    const $anchor = tr.doc.resolve(tablePos + 1 + newTopCellPos)
+    const $head = tr.doc.resolve(tablePos + 1 + newBottomCellPos)
+    tr.setSelection(new CellSelection($anchor, $head))
 
     dispatch(tr)
   }
