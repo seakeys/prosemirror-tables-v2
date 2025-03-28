@@ -862,31 +862,51 @@ export function duplicateRow(state: EditorState, dispatch?: (tr: Transaction) =>
   if (!isInTable(state)) return false
 
   if (dispatch) {
-    const rect = selectedRect(state)
-    let tr = state.tr
+    // 1. 先找到表格和选择的行
+    const $cell = selectionCell(state)
+    const table = $cell.node(-1)
+    const tablePos = $cell.start(-1) - 1
+    const tableStart = $cell.start(-1)
+    const map = TableMap.get(table)
 
-    // 先添加新行
-    tr = addRow(tr, rect, rect.bottom)
+    // 获取当前选择的单元格所在的行
+    const cellPos = $cell.pos - tableStart
+    const cellIndex = map.map.indexOf(cellPos)
+    const rowIndex = Math.floor(cellIndex / map.width)
 
-    // 获取新表格和映射
-    const tablePos = rect.tableStart - 1
-    const newTable = tr.doc.nodeAt(tablePos)
-    if (!newTable) return false
-    const newMap = TableMap.get(newTable)
+    // 2. 构建重写的表格 - 创建带有新行的副本
+    const tr = state.tr
+    const rows = []
 
-    // 复制原行内容到新行
-    for (let col = 0; col < rect.map.width; col++) {
-      const origCellPos = rect.map.map[rect.top * rect.map.width + col]
-      const origCell = rect.table.nodeAt(origCellPos)
+    for (let row = 0; row < map.height; row++) {
+      // 添加原始行
+      const originalRow = table.child(row)
+      rows.push(originalRow)
 
-      if (origCell) {
-        const newRow = rect.bottom
-        const newCellPos = newMap.map[newRow * newMap.width + col]
-
-        // 复制单元格内容
-        tr.replace(rect.tableStart + newCellPos + 1, rect.tableStart + newCellPos + newTable.nodeAt(newCellPos)!.nodeSize - 1, new Slice(origCell.content, 0, 0))
+      // 在选择行后添加副本
+      if (row === rowIndex) {
+        // 创建相同类型和属性的行，使用相同的单元格内容
+        rows.push(originalRow.type.create(originalRow.attrs, originalRow.content))
       }
     }
+
+    // 创建新表格
+    const newTable = table.type.create(table.attrs, Fragment.from(rows))
+
+    // 3. 用新表格替换旧表格
+    tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable)
+
+    // 4. 保持原来的选择状态 - 选择原始行（而不是新复制的行）
+    const newMap = TableMap.get(newTable)
+
+    // 映射到新表格中原始行的位置
+    const origLeftCellPos = newMap.map[rowIndex * newMap.width]
+    const origRightCellPos = newMap.map[rowIndex * newMap.width + newMap.width - 1]
+
+    // 创建单元格选择，选中原始行
+    const $anchor = tr.doc.resolve(tablePos + 1 + origLeftCellPos)
+    const $head = tr.doc.resolve(tablePos + 1 + origRightCellPos)
+    tr.setSelection(new CellSelection($anchor, $head))
 
     dispatch(tr)
   }
@@ -969,23 +989,61 @@ export function clearRowContent(state: EditorState, dispatch?: (tr: Transaction)
   if (!isInTable(state)) return false
 
   if (dispatch) {
-    const rect = selectedRect(state)
+    // 1. 找到表格和选择的行
+    const $cell = selectionCell(state)
+    const table = $cell.node(-1)
+    const tablePos = $cell.start(-1) - 1
+    const tableStart = $cell.start(-1)
+    const map = TableMap.get(table)
+
+    // 获取当前选择的单元格所在的行
+    const cellPos = $cell.pos - tableStart
+    const cellIndex = map.map.indexOf(cellPos)
+    const rowIndex = Math.floor(cellIndex / map.width)
+
+    // 2. 构建一个相同结构但行内容为空的新表格
     const tr = state.tr
+    const rows = []
+    const schema = state.schema
 
-    // 创建基础的空内容
-    const baseContent = tableNodeTypes(state.schema).cell.createAndFill()!.content
+    for (let row = 0; row < map.height; row++) {
+      const originalRow = table.child(row)
 
-    // 清除行的所有单元格内容
-    for (let row = rect.top; row < rect.bottom; row++) {
-      for (let col = 0; col < rect.map.width; col++) {
-        const cellPos = rect.map.map[row * rect.map.width + col]
-        const cell = rect.table.nodeAt(cellPos)
-
-        if (cell && !cell.content.eq(baseContent)) {
-          tr.replace(rect.tableStart + cellPos + 1, rect.tableStart + cellPos + cell.nodeSize - 1, new Slice(baseContent, 0, 0))
+      if (row == rowIndex) {
+        // 创建一个内容为空的行
+        const emptyCells = []
+        for (let i = 0; i < originalRow.childCount; i++) {
+          const origCell = originalRow.child(i)
+          // 创建一个属性相同但内容为空的单元格
+          const emptyCell = origCell.type.create(origCell.attrs, Fragment.from(schema.nodes.paragraph.create()))
+          emptyCells.push(emptyCell)
         }
+
+        // 添加内容为空的行
+        rows.push(originalRow.type.create(originalRow.attrs, Fragment.from(emptyCells)))
+      } else {
+        // 保留原始行
+        rows.push(originalRow)
       }
     }
+
+    // 创建新表格
+    const newTable = table.type.create(table.attrs, Fragment.from(rows))
+
+    // 3. 用新表格替换旧表格
+    tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable)
+
+    // 4. 保持原来的选择状态
+    const newMap = TableMap.get(newTable)
+
+    // 映射到新表格中的位置
+    const leftCellPos = newMap.map[rowIndex * newMap.width]
+    const rightCellPos = newMap.map[rowIndex * newMap.width + newMap.width - 1]
+
+    // 创建单元格选择
+    const $anchor = tr.doc.resolve(tablePos + 1 + leftCellPos)
+    const $head = tr.doc.resolve(tablePos + 1 + rightCellPos)
+    tr.setSelection(new CellSelection($anchor, $head))
 
     dispatch(tr)
   }
@@ -998,23 +1056,64 @@ export function clearColumnContent(state: EditorState, dispatch?: (tr: Transacti
   if (!isInTable(state)) return false
 
   if (dispatch) {
-    const rect = selectedRect(state)
+    // 1. 找到表格和选择的列
+    const $cell = selectionCell(state)
+    const table = $cell.node(-1)
+    const tablePos = $cell.start(-1) - 1
+    const tableStart = $cell.start(-1)
+    const map = TableMap.get(table)
+
+    // 获取当前选择的单元格所在的列
+    const cellPos = $cell.pos - tableStart
+    const cellIndex = map.map.indexOf(cellPos)
+    const colIndex = cellIndex % map.width
+
+    // 2. 构建一个相同结构但该列内容为空的新表格
     const tr = state.tr
+    const rows = []
+    const schema = state.schema
 
-    // 创建基础的空内容
-    const baseContent = tableNodeTypes(state.schema).cell.createAndFill()!.content
+    for (let row = 0; row < map.height; row++) {
+      const originalRow = table.child(row)
+      const cells = []
 
-    // 清除列的所有单元格内容
-    for (let col = rect.left; col < rect.right; col++) {
-      for (let row = 0; row < rect.map.height; row++) {
-        const cellPos = rect.map.map[row * rect.map.width + col]
-        const cell = rect.table.nodeAt(cellPos)
+      for (let i = 0; i < originalRow.childCount; i++) {
+        const origCell = originalRow.child(i)
+        // 确定这个单元格是否覆盖了目标列
+        const cellStart = map.map[row * map.width + (i % map.width)]
+        const cellRect = map.findCell(cellStart)
 
-        if (cell && !cell.content.eq(baseContent)) {
-          tr.replace(rect.tableStart + cellPos + 1, rect.tableStart + cellPos + cell.nodeSize - 1, new Slice(baseContent, 0, 0))
+        if (colIndex >= cellRect.left && colIndex < cellRect.right) {
+          // 这个单元格覆盖了目标列，清空其内容
+          const emptyCell = origCell.type.create(origCell.attrs, Fragment.from(schema.nodes.paragraph.create()))
+          cells.push(emptyCell)
+        } else {
+          // 这个单元格不覆盖目标列，保持原样
+          cells.push(origCell)
         }
       }
+
+      // 添加行
+      rows.push(originalRow.type.create(originalRow.attrs, Fragment.from(cells)))
     }
+
+    // 创建新表格
+    const newTable = table.type.create(table.attrs, Fragment.from(rows))
+
+    // 3. 用新表格替换旧表格
+    tr.replaceWith(tablePos, tablePos + table.nodeSize, newTable)
+
+    // 4. 保持原来的选择状态
+    const newMap = TableMap.get(newTable)
+
+    // 映射到新表格中的位置
+    const topCellPos = newMap.map[colIndex]
+    const bottomCellPos = newMap.map[(newMap.height - 1) * newMap.width + colIndex]
+
+    // 创建单元格选择
+    const $anchor = tr.doc.resolve(tablePos + 1 + topCellPos)
+    const $head = tr.doc.resolve(tablePos + 1 + bottomCellPos)
+    tr.setSelection(new CellSelection($anchor, $head))
 
     dispatch(tr)
   }
