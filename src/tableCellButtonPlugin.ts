@@ -1,4 +1,4 @@
-import { Plugin, PluginKey } from 'prosemirror-state'
+import { EditorState, Plugin, PluginKey, Transaction } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { TableMap } from './tablemap'
 import { cellAround } from './util'
@@ -10,8 +10,8 @@ import { CellSelection } from './cellselection'
 // 菜单项接口定义
 interface MenuItem {
   text: string
-  command: (state: any, dispatch: any) => boolean
-  selectAfter: ((state: any) => number) | null
+  command: (state: EditorState, dispatch?: (tr: Transaction) => void) => boolean
+  selectAfter: (() => number) | null
 }
 
 interface TableButtonsState {
@@ -141,35 +141,14 @@ function createSharedMenu(view: EditorView) {
   // 创建父容器元素
   const container = document.createElement('div')
   container.className = 'table-cell-menu-container'
-  container.style.position = 'fixed'
-  container.style.top = '0'
-  container.style.left = '0'
-  container.style.width = '100%'
-  container.style.height = '100%'
-  container.style.zIndex = '100'
-  container.style.display = 'none'
-  container.style.pointerEvents = 'none' // 允许事件穿透到下层元素
 
   // 创建透明层 - 作为菜单的背景，用于捕获点击事件
   const overlay = document.createElement('div')
   overlay.className = 'table-cell-menu-overlay'
-  overlay.style.position = 'absolute'
-  overlay.style.top = '0'
-  overlay.style.left = '0'
-  overlay.style.width = '100%'
-  overlay.style.height = '100%'
-  overlay.style.backgroundColor = 'transparent'
-  overlay.style.pointerEvents = 'auto' // 捕获事件
 
   // 创建菜单元素
   const menu = document.createElement('div')
   menu.className = 'table-cell-menu'
-  menu.style.position = 'absolute'
-  menu.style.backgroundColor = 'white'
-  menu.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)'
-  menu.style.borderRadius = '4px'
-  menu.style.padding = '4px 0'
-  menu.style.pointerEvents = 'auto' // 捕获事件
 
   // 点击透明层关闭菜单
   overlay.addEventListener('click', (e) => {
@@ -205,16 +184,16 @@ function showMenu(view: EditorView, button: HTMLElement, type: 'row' | 'column',
   if (type === 'row') {
     // 行菜单项
     const menuItems: MenuItem[] = [
-      { text: '在前插入行', command: addRowBefore, selectAfter: (state) => row },
-      { text: '在后插入行', command: addRowAfter, selectAfter: (state) => row + 1 },
+      { text: '在前插入行', command: addRowBefore, selectAfter: () => row },
+      { text: '在后插入行', command: addRowAfter, selectAfter: () => row + 1 },
       { text: '删除行', command: deleteRow, selectAfter: null },
     ]
     fillMenuItems(view, menuItems)
   } else {
     // 列菜单项
     const menuItems: MenuItem[] = [
-      { text: '在左插入列', command: addColumnBefore, selectAfter: (state) => col },
-      { text: '在右插入列', command: addColumnAfter, selectAfter: (state) => col + 1 },
+      { text: '在左插入列', command: addColumnBefore, selectAfter: () => col },
+      { text: '在右插入列', command: addColumnAfter, selectAfter: () => col + 1 },
       { text: '删除列', command: deleteColumn, selectAfter: null },
     ]
     fillMenuItems(view, menuItems)
@@ -250,9 +229,6 @@ function fillMenuItems(view: EditorView, menuItems: MenuItem[]): void {
     const menuItem: HTMLDivElement = document.createElement('div')
     menuItem.className = 'table-cell-menu-item'
     menuItem.textContent = item.text
-    menuItem.style.padding = '6px 12px'
-    menuItem.style.cursor = 'pointer'
-    menuItem.style.whiteSpace = 'nowrap'
 
     menuItem.addEventListener('mouseenter', () => menuItem.style.setProperty('backgroundColor', '#f0f0f0'))
 
@@ -270,7 +246,7 @@ function fillMenuItems(view: EditorView, menuItems: MenuItem[]): void {
 
         // 如果有selectAfter函数，执行后续选择
         if (item.selectAfter) {
-          const newPosition = item.selectAfter(state)
+          const newPosition = item.selectAfter()
 
           // 获取当前的插件状态
           const pluginState = tableButtonsKey.getState(state)
