@@ -126,6 +126,10 @@ function buildDecorationSet(doc: PMNode): DecorationSet {
               alert(`列 ${col + 1} 按钮被点击！`)
             })
 
+            // 添加鼠标悬停处理
+            button.addEventListener('mouseenter', () => (button.dataset.hover = 'true'))
+            button.addEventListener('mouseleave', () => (button.dataset.hover = 'false'))
+
             // 存储DOM引用
             buttonRefs[key] = button
             return button
@@ -158,6 +162,9 @@ function buildDecorationSet(doc: PMNode): DecorationSet {
               alert(`行 ${row + 1} 按钮被点击！`)
             })
 
+            button.addEventListener('mouseenter', () => (button.dataset.hover = 'true'))
+            button.addEventListener('mouseleave', () => (button.dataset.hover = 'false'))
+
             // 存储DOM引用
             buttonRefs[key] = button
             return button
@@ -177,19 +184,27 @@ function buildDecorationSet(doc: PMNode): DecorationSet {
 function updateButtonsVisibility(activeRow: number, activeCol: number): void {
   // 更新所有按钮状态
   Object.keys(buttonRefs).forEach((key) => {
+    const button = buttonRefs[key]
+
+    // 如果鼠标悬停在按钮上，保持按钮可见
+    if (button.dataset.hover === 'true') {
+      button.classList.add('active')
+      return
+    }
+
     if (key.startsWith('row-')) {
       const row = parseInt(key.substring(4))
       if (row === activeRow) {
-        buttonRefs[key].classList.add('active')
+        button.classList.add('active')
       } else {
-        buttonRefs[key].classList.remove('active')
+        button.classList.remove('active')
       }
     } else if (key.startsWith('col-')) {
       const col = parseInt(key.substring(4))
       if (col === activeCol) {
-        buttonRefs[key].classList.add('active')
+        button.classList.add('active')
       } else {
-        buttonRefs[key].classList.remove('active')
+        button.classList.remove('active')
       }
     }
   })

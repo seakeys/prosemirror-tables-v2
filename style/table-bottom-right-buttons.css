@@ -2,7 +2,7 @@
 .table-add-column-button,
 .table-add-row-column-button {
   position: absolute;
-  color: rgba(55, 53, 47, 0.45);
+  color: #c6c6c6;
   user-select: none;
   transition: opacity 150ms 50ms;
   opacity: 1;

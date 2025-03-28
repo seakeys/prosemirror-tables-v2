@@ -1,6 +1,6 @@
 .table-cell-internal-button {
   user-select: none;
-  transition: opacity 300ms;
+  transition: opacity 150ms 50ms;
   cursor: pointer;
   opacity: 0;
   position: absolute;
@@ -12,6 +12,16 @@
   z-index: 40;
   text-align: center;
   box-sizing: border-box;
+  color: #37352f59;
+}
+
+.table-cell-internal-button:hover {
+  background: #f1f1f1;
+}
+
+.table-cell-internal-button:active {
+  background: #3e9dfe;
+  color: #ffffff;
 }
 
 .table-cell-internal-button.active {
