@@ -104,7 +104,7 @@ export function tableCellButtonPlugin(): Plugin {
           // 检查菜单是否显示
           const pluginState = tableButtonsKey.getState(view.state)
           const container = document.querySelector('.table-cell-menu-container') as HTMLElement
-          if (!pluginState || !container || container.style.display !== 'block') {
+          if (!pluginState || !container || !container.classList.contains('visible')) {
             updateActivePosition(view, -1, -1)
           }
           return false
@@ -277,7 +277,7 @@ function showMenu(view: EditorView, button: HTMLElement, type: 'row' | 'column',
 
   // 显示菜单容器
   const container = document.querySelector('.table-cell-menu-container') as HTMLElement
-  if (container) container.style.display = 'block'
+  if (container) container.classList.add('visible')
 
   // 更新活动菜单信息
   view.dispatch(view.state.tr.setMeta(tableButtonsKey, { ...pluginState, activeMenuType: type }))
@@ -370,7 +370,7 @@ function hideMenu(view: EditorView) {
   if (!pluginState) return
 
   const container = document.querySelector('.table-cell-menu-container') as HTMLElement
-  if (container) container.style.display = 'none'
+  if (container) container.classList.remove('visible')
 
   // 更新状态
   view.dispatch(view.state.tr.setMeta(tableButtonsKey, { ...pluginState, activeMenuType: null }))
