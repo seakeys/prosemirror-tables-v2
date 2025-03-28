@@ -22,6 +22,8 @@ interface TableButtonsState {
   decorationSet: DecorationSet
   sharedMenu: HTMLElement | null
   activeMenuType: 'row' | 'column' | null
+  resizeHandler?: (() => void) | null // 存储resize事件处理函数
+  scrollHandler?: (() => void) | null // 存储scroll事件处理函数
 }
 
 // 存储按钮DOM引用
@@ -80,10 +82,7 @@ export function tableCellButtonPlugin(): Plugin {
           if (!pos) return false
 
           const $cell = cellAround(view.state.doc.resolve(pos.pos))
-          if (!$cell) {
-            updateActivePosition(view, -1, -1)
-            return false
-          }
+          if (!$cell) return false
 
           const table = $cell.node(-1)
           const tableStart = $cell.start(-1)
@@ -266,14 +265,7 @@ function showMenu(view: EditorView, button: HTMLElement, type: 'row' | 'column',
   }
 
   // 定位菜单
-  const rect = button.getBoundingClientRect()
-  if (type === 'row') {
-    pluginState.sharedMenu.style.left = `${rect.right + 5}px`
-    pluginState.sharedMenu.style.top = `${rect.top}px`
-  } else {
-    pluginState.sharedMenu.style.left = `${rect.left}px`
-    pluginState.sharedMenu.style.top = `${rect.bottom + 5}px`
-  }
+  positionMenu(pluginState, button, type)
 
   // 显示菜单容器
   const container = document.querySelector('.table-cell-menu-container') as HTMLElement
@@ -284,6 +276,14 @@ function showMenu(view: EditorView, button: HTMLElement, type: 'row' | 'column',
 
   // 选择对应的行或列
   selectTableRowOrColumn(view, type, row, col)
+
+  // 添加窗口变化监听
+  const resizeHandler = () => handleWindowResize(view)
+  window.addEventListener('resize', resizeHandler)
+  window.addEventListener('scroll', resizeHandler)
+
+  // 存储事件处理函数引用以便稍后移除
+  view.state.tr.setMeta(tableButtonsKey, { ...pluginState, resizeHandler, scrollHandler: resizeHandler })
 }
 
 // 填充菜单项
@@ -364,6 +364,37 @@ function fillMenuItems(view: EditorView, menuItems: MenuItem[]): void {
   })
 }
 
+// 菜单定位函数
+function positionMenu(pluginState: TableButtonsState, button: HTMLElement, type: 'row' | 'column'): void {
+  if (!pluginState.sharedMenu) return
+
+  const rect = button.getBoundingClientRect()
+  if (type === 'row') {
+    pluginState.sharedMenu.style.left = `${rect.right + 5}px`
+    pluginState.sharedMenu.style.top = `${rect.top}px`
+  } else {
+    pluginState.sharedMenu.style.left = `${rect.left}px`
+    pluginState.sharedMenu.style.top = `${rect.bottom + 5}px`
+  }
+}
+
+// 窗口大小变化处理
+function handleWindowResize(view: EditorView) {
+  const pluginState = tableButtonsKey.getState(view.state)
+  if (!pluginState || !pluginState.activeMenuType || !pluginState.sharedMenu) return
+
+  // 寻找当前活动按钮
+  let activeButton: HTMLElement | null = null
+  if (pluginState.activeMenuType === 'row') {
+    activeButton = buttonRefs[`row-${pluginState.activeRow}`] || null
+  } else {
+    activeButton = buttonRefs[`col-${pluginState.activeCol}`] || null
+  }
+
+  // 重新定位菜单
+  if (activeButton) positionMenu(pluginState, activeButton, pluginState.activeMenuType)
+}
+
 // 隐藏菜单
 function hideMenu(view: EditorView) {
   const pluginState = tableButtonsKey.getState(view.state)
@@ -372,8 +403,16 @@ function hideMenu(view: EditorView) {
   const container = document.querySelector('.table-cell-menu-container') as HTMLElement
   if (container) container.classList.remove('visible')
 
+  // 移除窗口事件监听
+  if (pluginState.resizeHandler) {
+    window.removeEventListener('resize', pluginState.resizeHandler)
+  }
+  if (pluginState.scrollHandler) {
+    window.removeEventListener('scroll', pluginState.scrollHandler)
+  }
+
   // 更新状态
-  view.dispatch(view.state.tr.setMeta(tableButtonsKey, { ...pluginState, activeMenuType: null }))
+  view.dispatch(view.state.tr.setMeta(tableButtonsKey, { ...pluginState, activeMenuType: null, resizeHandler: null, scrollHandler: null }))
 }
 
 // 构建表格装饰集
