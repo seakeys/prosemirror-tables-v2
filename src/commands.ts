@@ -856,3 +856,139 @@ export function addRowAndColumnToFirstTable(state: EditorState, dispatch?: (tr: 
 
   return true
 }
+
+// 复制行
+export function duplicateRow(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  if (!isInTable(state)) return false
+
+  if (dispatch) {
+    const rect = selectedRect(state)
+    let tr = state.tr
+
+    // 先添加新行
+    tr = addRow(tr, rect, rect.bottom)
+
+    // 获取新表格和映射
+    const tablePos = rect.tableStart - 1
+    const newTable = tr.doc.nodeAt(tablePos)
+    if (!newTable) return false
+    const newMap = TableMap.get(newTable)
+
+    // 复制原行内容到新行
+    for (let col = 0; col < rect.map.width; col++) {
+      const origCellPos = rect.map.map[rect.top * rect.map.width + col]
+      const origCell = rect.table.nodeAt(origCellPos)
+
+      if (origCell) {
+        const newRow = rect.bottom
+        const newCellPos = newMap.map[newRow * newMap.width + col]
+
+        // 复制单元格内容
+        tr.replace(rect.tableStart + newCellPos + 1, rect.tableStart + newCellPos + newTable.nodeAt(newCellPos)!.nodeSize - 1, new Slice(origCell.content, 0, 0))
+      }
+    }
+
+    dispatch(tr)
+  }
+
+  return true
+}
+
+// 复制列
+export function duplicateColumn(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  if (!isInTable(state)) return false
+
+  if (dispatch) {
+    const rect = selectedRect(state)
+    let tr = state.tr
+
+    // 先添加新列
+    tr = addColumn(tr, rect, rect.right)
+
+    // 获取新表格和映射
+    const tablePos = rect.tableStart - 1
+    const newTable = tr.doc.nodeAt(tablePos)
+    if (!newTable) return false
+    const newMap = TableMap.get(newTable)
+
+    // 复制原列内容到新列
+    for (let row = 0; row < rect.map.height; row++) {
+      const origCellPos = rect.map.map[row * rect.map.width + rect.left]
+      const origCell = rect.table.nodeAt(origCellPos)
+
+      if (origCell) {
+        const newCol = rect.right
+        const newCellPos = newMap.map[row * newMap.width + newCol]
+
+        // 复制单元格内容
+        tr.replace(
+          rect.tableStart + newCellPos + 1, // 新单元格内容的开始位置
+          rect.tableStart + newCellPos + newTable.nodeAt(newCellPos)!.nodeSize - 1, // 新单元格内容的结束位置
+          new Slice(origCell.content, 0, 0), // 原单元格内容的切片
+        )
+      }
+    }
+
+    dispatch(tr)
+  }
+
+  return true
+}
+
+// 清除行内容
+export function clearRowContent(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  if (!isInTable(state)) return false
+
+  if (dispatch) {
+    const rect = selectedRect(state)
+    const tr = state.tr
+
+    // 创建基础的空内容
+    const baseContent = tableNodeTypes(state.schema).cell.createAndFill()!.content
+
+    // 清除行的所有单元格内容
+    for (let row = rect.top; row < rect.bottom; row++) {
+      for (let col = 0; col < rect.map.width; col++) {
+        const cellPos = rect.map.map[row * rect.map.width + col]
+        const cell = rect.table.nodeAt(cellPos)
+
+        if (cell && !cell.content.eq(baseContent)) {
+          tr.replace(rect.tableStart + cellPos + 1, rect.tableStart + cellPos + cell.nodeSize - 1, new Slice(baseContent, 0, 0))
+        }
+      }
+    }
+
+    dispatch(tr)
+  }
+
+  return true
+}
+
+// 清除列内容
+export function clearColumnContent(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  if (!isInTable(state)) return false
+
+  if (dispatch) {
+    const rect = selectedRect(state)
+    const tr = state.tr
+
+    // 创建基础的空内容
+    const baseContent = tableNodeTypes(state.schema).cell.createAndFill()!.content
+
+    // 清除列的所有单元格内容
+    for (let col = rect.left; col < rect.right; col++) {
+      for (let row = 0; row < rect.map.height; row++) {
+        const cellPos = rect.map.map[row * rect.map.width + col]
+        const cell = rect.table.nodeAt(cellPos)
+
+        if (cell && !cell.content.eq(baseContent)) {
+          tr.replace(rect.tableStart + cellPos + 1, rect.tableStart + cellPos + cell.nodeSize - 1, new Slice(baseContent, 0, 0))
+        }
+      }
+    }
+
+    dispatch(tr)
+  }
+
+  return true
+}

@@ -4,7 +4,7 @@ import { TableMap } from './tablemap'
 import { cellAround } from './util'
 import { EditorView } from 'prosemirror-view'
 import { Node as PMNode } from 'prosemirror-model'
-import { addColumnAfter, addColumnBefore, addRowAfter, addRowBefore, deleteColumn, deleteRow } from './commands'
+import { addColumnAfter, addColumnBefore, addRowAfter, addRowBefore, clearColumnContent, clearRowContent, deleteColumn, deleteRow, duplicateColumn, duplicateRow } from './commands'
 import { CellSelection } from './cellselection'
 
 // 菜单项接口定义
@@ -187,14 +187,14 @@ function showMenu(view: EditorView, button: HTMLElement, type: 'row' | 'column',
     const menuItems: MenuItem[] = [
       {
         text: '在前插入行',
-        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12H21M12 3V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="9.194" height="11.877" viewBox="0 0 9.194 11.877"><defs><style>.a,.b{fill:none;}.b{stroke:#5f5f5f;}.c,.d{stroke:none;}.d{fill:#5f5f5f;}</style></defs><g transform="translate(692.659 -1609.758) rotate(90)"><g class="a" transform="translate(1610.635 687.562)"><path class="c" d="M0,0H11V1H0Z"/><path class="d" d="M 0 0 L 11 0 L 11 1 L 0 1 L 0 0 Z"/></g><path class="b" d="M6,0H0V6" transform="translate(1610.465 688.061) rotate(-45)"/></g></svg>',
         shortcut: 'Alt+↑',
         command: addRowBefore,
         selectAfter: () => row,
       },
       {
         text: '在后插入行',
-        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12H21M12 3V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="9.194" height="11.877" viewBox="0 0 9.194 11.877"><defs><style>.a,.b{fill:none;}.b{stroke:#5f5f5f;}.c,.d{stroke:none;}.d{fill:#5f5f5f;}</style></defs><g transform="translate(-683.465 1621.635) rotate(-90)"><g class="a" transform="translate(1610.635 687.562)"><path class="c" d="M0,0H11V1H0Z"/><path class="d" d="M 0 0 L 11 0 L 11 1 L 0 1 L 0 0 Z"/></g><path class="b" d="M6,0H0V6" transform="translate(1610.465 688.061) rotate(-45)"/></g></svg>',
         shortcut: 'Alt+↓',
         command: addRowAfter,
         selectAfter: () => row + 1,
@@ -203,14 +203,14 @@ function showMenu(view: EditorView, button: HTMLElement, type: 'row' | 'column',
         text: '创建副本',
         icon: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><g transform="translate(12) rotate(90)"><path class="a" d="M10,1a1,1,0,0,1,1,1V7a1,1,0,0,1-1,1H5A1,1,0,0,1,4,7V2A1,1,0,0,1,5,1h5m0-1H5A2,2,0,0,0,3,2V7A2,2,0,0,0,5,9h5a2,2,0,0,0,2-2V2a2,2,0,0,0-2-2Z"/><path class="a" d="M7,11H2a1,1,0,0,1-1-1V5A1,1,0,0,1,2,4V3A2,2,0,0,0,0,5v5a2,2,0,0,0,2,2H7a2,2,0,0,0,2-2H8A1,1,0,0,1,7,11Z"/></g></svg>',
         shortcut: 'Ctrl+D',
-        command: deleteColumn,
+        command: duplicateRow,
         selectAfter: null,
       },
       {
         text: '清除内容',
         icon: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><g transform="translate(1490.264 -3155.368)"><path class="a" d="M-1484.264,3155.368a6,6,0,0,0-6,6,6,6,0,0,0,6,6,6,6,0,0,0,6-6A6,6,0,0,0-1484.264,3155.368Zm2.121,7.413a.5.5,0,0,1,0,.707.5.5,0,0,1-.707,0l-1.413-1.413-1.415,1.415a.5.5,0,0,1-.707,0,.5.5,0,0,1,0-.708l1.415-1.414-1.415-1.415a.5.5,0,0,1,0-.707.5.5,0,0,1,.707,0l1.415,1.415,1.413-1.414a.5.5,0,0,1,.707,0,.5.5,0,0,1,0,.707l-1.413,1.414Z"/></g></svg>',
         shortcut: 'Delete',
-        command: deleteColumn,
+        command: clearRowContent,
         selectAfter: null,
       },
       {
@@ -243,14 +243,14 @@ function showMenu(view: EditorView, button: HTMLElement, type: 'row' | 'column',
         text: '创建副本',
         icon: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><g transform="translate(12) rotate(90)"><path class="a" d="M10,1a1,1,0,0,1,1,1V7a1,1,0,0,1-1,1H5A1,1,0,0,1,4,7V2A1,1,0,0,1,5,1h5m0-1H5A2,2,0,0,0,3,2V7A2,2,0,0,0,5,9h5a2,2,0,0,0,2-2V2a2,2,0,0,0-2-2Z"/><path class="a" d="M7,11H2a1,1,0,0,1-1-1V5A1,1,0,0,1,2,4V3A2,2,0,0,0,0,5v5a2,2,0,0,0,2,2H7a2,2,0,0,0,2-2H8A1,1,0,0,1,7,11Z"/></g></svg>',
         shortcut: 'Ctrl+D',
-        command: deleteColumn,
+        command: duplicateColumn,
         selectAfter: null,
       },
       {
         text: '清除内容',
         icon: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><defs><style>.a{fill:#5f5f5f;}</style></defs><g transform="translate(1490.264 -3155.368)"><path class="a" d="M-1484.264,3155.368a6,6,0,0,0-6,6,6,6,0,0,0,6,6,6,6,0,0,0,6-6A6,6,0,0,0-1484.264,3155.368Zm2.121,7.413a.5.5,0,0,1,0,.707.5.5,0,0,1-.707,0l-1.413-1.413-1.415,1.415a.5.5,0,0,1-.707,0,.5.5,0,0,1,0-.708l1.415-1.414-1.415-1.415a.5.5,0,0,1,0-.707.5.5,0,0,1,.707,0l1.415,1.415,1.413-1.414a.5.5,0,0,1,.707,0,.5.5,0,0,1,0,.707l-1.413,1.414Z"/></g></svg>',
         shortcut: 'Delete',
-        command: deleteColumn,
+        command: clearColumnContent,
         selectAfter: null,
       },
       {
