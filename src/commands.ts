@@ -1161,3 +1161,24 @@ export function duplicateTableRowOrColumn(state: EditorState, dispatch?: (tr: Tr
 
   return false
 }
+
+/**
+ * 自定义Backspace命令，处理以下情况：
+ * 整个文档被选中时阻止删除
+ */
+export function customBackspace(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  const sel = state.selection
+
+  // 检查选择是否为空
+  if (!sel.empty) {
+    const { from, to } = sel
+    // 检查是否选中了整个文档
+    if (from === 0 && to >= state.doc.content.size - 2) {
+      console.log('阻止删除整个文档')
+      return true // 阻止删除
+    }
+  }
+
+  // 其他情况使用原有的backspace逻辑
+  return baseKeymap.Backspace(state, dispatch)
+}
