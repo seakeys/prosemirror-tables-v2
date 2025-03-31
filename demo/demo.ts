@@ -14,7 +14,7 @@ import { keymap } from 'prosemirror-keymap'
 import { baseKeymap } from 'prosemirror-commands'
 import { history, undo, redo } from 'prosemirror-history'
 
-import { goToNextCell, addColumnAfter, addColumnBefore, deleteColumn, addRowAfter, addRowBefore, deleteRow } from '../src'
+import { deleteTableRowOrColumn, duplicateTableRowOrColumn, goToNextCell } from '../src'
 import { tableEditing, columnResizing, tableNodes, fixTables } from '../src'
 import { tableHeaderMenuPlugin } from '../src/tableHeaderMenu'
 import { tableOverlayPlugin } from '../src/tableOverlayPlugin'
@@ -44,22 +44,14 @@ const schema = new Schema({
 
 // 创建表格快捷键映射
 const tableKeymap = {
-  // 行列操作
-  'Alt-ArrowUp': addRowBefore,
-  'Alt-ArrowDown': addRowAfter,
-  'Alt-ArrowLeft': addColumnBefore,
-  'Alt-ArrowRight': addColumnAfter,
-  'Alt-Backspace': deleteRow,
-  'Alt-Delete': deleteColumn,
-
-  // 表格内导航
+  ...baseKeymap,
   Tab: goToNextCell(1),
   'Shift-Tab': goToNextCell(-1),
-
-  // 编辑操作快捷键映射
   'Mod-z': undo,
   'Mod-y': redo,
   'Mod-Shift-z': redo,
+  'Ctrl-d': duplicateTableRowOrColumn,
+  Delete: deleteTableRowOrColumn,
 }
 
 const contentElement = document.querySelector('#content')
@@ -72,19 +64,14 @@ let state = EditorState.create({
   plugins: [
     // 基础编辑功能
     history(),
-    keymap(baseKeymap),
-
     // 表格功能插件
     columnResizing(),
     tableHeaderMenuPlugin(),
     tableOverlayPlugin(),
     tableAddCellButtonPlugin(),
     tableCellButtonPlugin(),
-
-    // 表格快捷键在tableEditing前添加
+    // 快捷键
     keymap(tableKeymap),
-
-    // 表格编辑插件放在最后
     tableEditing(),
   ],
 })

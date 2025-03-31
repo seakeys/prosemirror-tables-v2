@@ -8,6 +8,7 @@ import type { Direction } from './input'
 import { tableNodeTypes, TableRole } from './schema'
 import { Rect, TableMap } from './tablemap'
 import { addColSpan, cellAround, CellAttrs, cellWrapping, columnIsHeader, isInTable, moveCellForward, removeColSpan, selectionCell } from './util'
+import { baseKeymap } from 'prosemirror-commands'
 
 /**
  * @public
@@ -1119,4 +1120,44 @@ export function clearColumnContent(state: EditorState, dispatch?: (tr: Transacti
   }
 
   return true
+}
+
+// 删除表格中的行或列
+export function deleteTableRowOrColumn(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  // 检查是否在表格中
+  if (!isInTable(state)) return false
+
+  const sel = state.selection
+
+  // 检查是否是单元格选择
+  if (sel instanceof CellSelection) {
+    // 判断是整行还是整列选择
+    if (sel.isRowSelection()) {
+      return deleteRow(state, dispatch)
+    } else if (sel.isColSelection()) {
+      return deleteColumn(state, dispatch)
+    }
+  }
+
+  // 如果不是整行或整列选择，使用默认的删除行为
+  return baseKeymap['Backspace'](state, dispatch)
+}
+
+// 复制表格中的行或列
+export function duplicateTableRowOrColumn(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  if (!isInTable(state)) return false
+
+  const sel = state.selection
+
+  // 检查是否是单元格选择
+  if (sel instanceof CellSelection) {
+    // 判断是整行还是整列选择
+    if (sel.isRowSelection()) {
+      return duplicateRow(state, dispatch)
+    } else if (sel.isColSelection()) {
+      return duplicateColumn(state, dispatch)
+    }
+  }
+
+  return false
 }

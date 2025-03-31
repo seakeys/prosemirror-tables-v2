@@ -6,7 +6,6 @@ import { Command, EditorState, Selection, TextSelection, Transaction } from 'pro
 
 import { EditorView } from 'prosemirror-view'
 import { CellSelection } from './cellselection'
-import { deleteCellSelection } from './commands'
 import { clipCells, fitSlice, insertCells, pastedCells } from './copypaste'
 import { tableNodeTypes } from './schema'
 import { TableMap } from './tablemap'
@@ -33,11 +32,6 @@ export const handleKeyDown = keydownHandler({
   'Shift-ArrowRight': shiftArrow('horiz', 1),
   'Shift-ArrowUp': shiftArrow('vert', -1),
   'Shift-ArrowDown': shiftArrow('vert', 1),
-
-  // Backspace: deleteCellSelection,
-  // 'Mod-Backspace': deleteCellSelection,
-  Delete: deleteCellSelection,
-  // 'Mod-Delete': deleteCellSelection,
 })
 
 /**

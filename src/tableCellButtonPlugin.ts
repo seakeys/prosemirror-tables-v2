@@ -24,6 +24,7 @@ interface TableButtonsState {
   activeMenuType: 'row' | 'column' | null
   resizeHandler?: (() => void) | null // 存储resize事件处理函数
   scrollHandler?: (() => void) | null // 存储scroll事件处理函数
+  editorView: EditorView | null
 }
 
 // 存储按钮DOM引用
@@ -43,9 +44,13 @@ export function tableCellButtonPlugin(): Plugin {
           decorationSet: buildDecorationSet(state.doc),
           sharedMenu: null,
           activeMenuType: null,
+          editorView: null,
         }
       },
       apply(tr, state) {
+        // 更新下拉框位置
+        requestAnimationFrame(() => state.editorView && handleWindowResize(state.editorView))
+
         // 如果文档变化，重建装饰集
         if (tr.docChanged) {
           return {
@@ -118,6 +123,9 @@ export function tableCellButtonPlugin(): Plugin {
 
     view(editorView) {
       const pluginState = tableButtonsKey.getState(editorView.state)
+
+      if (pluginState) pluginState.editorView = editorView
+
       // 初始化共享菜单
       if (pluginState && !pluginState.sharedMenu) {
         pluginState.sharedMenu = createSharedMenu(editorView)
@@ -369,6 +377,10 @@ function positionMenu(pluginState: TableButtonsState, button: HTMLElement, type:
   if (!pluginState.sharedMenu) return
 
   const rect = button.getBoundingClientRect()
+
+  // top 0 位置直接隐藏拉下框
+  if (!rect.top && pluginState.editorView) return hideMenu(pluginState.editorView)
+
   if (type === 'row') {
     pluginState.sharedMenu.style.left = `${rect.right + 5}px`
     pluginState.sharedMenu.style.top = `${rect.top}px`
