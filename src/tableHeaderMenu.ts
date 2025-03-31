@@ -1,8 +1,83 @@
 import { Plugin, PluginKey } from 'prosemirror-state'
 import { toggleHeaderRow, toggleHeaderColumn } from './commands'
 import { isInTable } from './util'
+import { selectedRect } from './commands'
+import { tableNodeTypes } from './schema'
+import { EditorView } from 'prosemirror-view'
 
 export const tableMenuPluginKey = new PluginKey('tableMenu')
+
+// 检查表格的表头行状态
+function isHeaderRowEnabled(view: EditorView) {
+  if (!isInTable(view.state)) return false
+
+  try {
+    // 获取选中的表格区域
+    const rect = selectedRect(view.state)
+    const types = tableNodeTypes(view.state.schema)
+
+    // 检查第一行的单元格是否都是表头单元格
+    for (let col = 0; col < rect.map.width; col++) {
+      const cellPos = rect.map.map[col]
+      const cell = rect.table.nodeAt(cellPos)
+      if (cell && cell.type !== types.header_cell) {
+        return false
+      }
+    }
+
+    return true
+  } catch (e) {
+    console.error('检查表头行状态时出错:', e)
+    return false
+  }
+}
+
+// 检查表格的表头列状态
+function isHeaderColumnEnabled(view: EditorView) {
+  if (!isInTable(view.state)) return false
+
+  try {
+    // 获取选中的表格区域
+    const rect = selectedRect(view.state)
+    const types = tableNodeTypes(view.state.schema)
+
+    // 检查第一列的单元格是否都是表头单元格
+    for (let row = 0; row < rect.map.height; row++) {
+      const cellPos = rect.map.map[row * rect.map.width]
+      const cell = rect.table.nodeAt(cellPos)
+      if (cell && cell.type !== types.header_cell) {
+        return false
+      }
+    }
+
+    return true
+  } catch (e) {
+    console.error('检查表头列状态时出错:', e)
+    return false
+  }
+}
+
+// 更新开关按钮状态
+function updateToggleButton(button: HTMLElement, enabled: boolean): void {
+  // 查找开关轨道元素
+  const switchTrack = button.querySelector('.table-toggle-switch-track')
+
+  if (switchTrack) {
+    if (enabled) {
+      // 启用状态 - 添加enabled类
+      switchTrack.classList.add('enabled')
+    } else {
+      // 禁用状态 - 移除enabled类
+      switchTrack.classList.remove('enabled')
+    }
+  }
+
+  // 更新复选框状态
+  const checkbox = button.querySelector('input[type="checkbox"]') as HTMLInputElement
+  if (checkbox) {
+    checkbox.checked = enabled
+  }
+}
 
 export function tableHeaderMenuPlugin() {
   return new Plugin({
@@ -35,12 +110,12 @@ export function tableHeaderMenuPlugin() {
       // 添加菜单项 - 切换表头行
       const toggleRowOption = document.createElement('div')
       toggleRowOption.className = 'table-header-menu-item'
-      toggleRowOption.innerHTML = `<div style="display: flex;"><div><svg xmlns="http://www.w3.org/2000/svg" width="12" height="10" viewBox="0 0 12 10"><defs><style>.a{fill:#fff;}.a,.b,.c{stroke:#707070;}.b,.e{fill:none;}.c{fill:#707070;}.d{stroke:none;}</style></defs><g transform="translate(-1573 -718)"><g class="a" transform="translate(1573 718)"><rect class="d" width="12" height="10" rx="2"/><rect class="e" x="0.5" y="0.5" width="11" height="9" rx="1.5"/></g><line class="b" x2="11" transform="translate(1573.5 721.5)"/><line class="b" y1="9" transform="translate(1579 718.5)"/><line class="b" x2="11" transform="translate(1573.5 724.5)"/><g class="c" transform="translate(1573 718)"><path class="d" d="M2,0h8a2,2,0,0,1,2,2V4a0,0,0,0,1,0,0H0A0,0,0,0,1,0,4V2A2,2,0,0,1,2,0Z"/><path class="e" d="M2,.5h8A1.5,1.5,0,0,1,11.5,2V3.5a0,0,0,0,1,0,0H.5a0,0,0,0,1,0,0V2A1.5,1.5,0,0,1,2,.5Z"/></g></g></svg><span style="padding-left: 7px;">切换表头行</span></div><div style="margin-left: auto; min-width: 0px; flex-shrink: 0;"><div class="pseudoHover pseudoActive" style="position: relative; border-radius: 44px; --pseudoHover--background: rgba(55,53,47,.06); --pseudoActive--background: rgba(55,53,47,.16);"><div style="display: flex; flex-shrink: 0; height: 14px; width: 26px; border-radius: 44px; padding: 2px; box-sizing: content-box; background: rgb(35, 131, 226); transition: background 200ms, box-shadow 200ms;"><div style="width: 14px; height: 14px; border-radius: 44px; background: white; transition: transform 200ms ease-out, background 200ms ease-out; transform: translateX(12px) translateY(0px);"></div></div><input type="checkbox" role="switch" checked="" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0px; left: 0px; cursor: pointer;"></div></div></div>`
+      toggleRowOption.innerHTML = `<div class="table-toggle-content"><div><svg xmlns="http://www.w3.org/2000/svg" width="12" height="10" viewBox="0 0 12 10"><defs><style>.a{fill:#fff;}.a,.b,.c{stroke:#707070;}.b,.e{fill:none;}.c{fill:#707070;}.d{stroke:none;}</style></defs><g transform="translate(-1573 -718)"><g class="a" transform="translate(1573 718)"><rect class="d" width="12" height="10" rx="2"/><rect class="e" x="0.5" y="0.5" width="11" height="9" rx="1.5"/></g><line class="b" x2="11" transform="translate(1573.5 721.5)"/><line class="b" y1="9" transform="translate(1579 718.5)"/><line class="b" x2="11" transform="translate(1573.5 724.5)"/><g class="c" transform="translate(1573 718)"><path class="d" d="M2,0h8a2,2,0,0,1,2,2V4a0,0,0,0,1,0,0H0A0,0,0,0,1,0,4V2A2,2,0,0,1,2,0Z"/><path class="e" d="M2,.5h8A1.5,1.5,0,0,1,11.5,2V3.5a0,0,0,0,1,0,0H.5a0,0,0,0,1,0,0V2A1.5,1.5,0,0,1,2,.5Z"/></g></g></svg><span class="table-toggle-text">切换表头行</span></div><div class="table-toggle-switch-container"><div class="table-toggle-switch-shell"><div class="table-toggle-switch-track"><div class="table-toggle-switch-thumb"></div></div><input type="checkbox" role="switch" class="table-toggle-switch-checkbox"></div></div></div>`
 
       // 添加菜单项 - 切换表头列
       const toggleColOption = document.createElement('div')
       toggleColOption.className = 'table-header-menu-item'
-      toggleColOption.innerHTML = `<div style="display: flex;"><div><svg xmlns="http://www.w3.org/2000/svg" width="12" height="10" viewBox="0 0 12 10"><defs><style>.a{fill:#fff;}.a,.b,.c{stroke:#707070;}.b,.e{fill:none;}.c{fill:#707070;}.d{stroke:none;}</style></defs><g transform="translate(-1573 -718)"><g class="a" transform="translate(1573 718)"><rect class="d" width="12" height="10" rx="2"/><rect class="e" x="0.5" y="0.5" width="11" height="9" rx="1.5"/></g><line class="b" x2="11" transform="translate(1573.5 721.5)"/><line class="b" y1="9" transform="translate(1580.5 718.5)"/><line class="b" x2="11" transform="translate(1573.5 724.5)"/><g class="c" transform="translate(1573 728) rotate(-90)"><path class="d" d="M2,0H8a2,2,0,0,1,2,2V4a0,0,0,0,1,0,0H0A0,0,0,0,1,0,4V2A2,2,0,0,1,2,0Z"/><path class="e" d="M2,.5H8A1.5,1.5,0,0,1,9.5,2V3.5a0,0,0,0,1,0,0H.5a0,0,0,0,1,0,0V2A1.5,1.5,0,0,1,2,.5Z"/></g></g></svg><span style="padding-left: 7px;">切换表头列</span></div><div style="margin-left: auto; min-width: 0px; flex-shrink: 0;"><div class="pseudoHover pseudoActive" style="position: relative; border-radius: 44px; --pseudoHover--background: rgba(55,53,47,.06); --pseudoActive--background: rgba(55,53,47,.16);"><div style="display: flex; flex-shrink: 0; height: 14px; width: 26px; border-radius: 44px; padding: 2px; box-sizing: content-box; background: rgba(135, 131, 120, 0.3); transition: background 200ms, box-shadow 200ms;"><div style="width: 14px; height: 14px; border-radius: 44px; background: white; transition: transform 200ms ease-out, background 200ms ease-out; transform: translateX(0px) translateY(0px);"></div></div><input type="checkbox" role="switch" checked="" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0px; left: 0px; cursor: pointer;"></div></div></div>`
+      toggleColOption.innerHTML = `<div class="table-toggle-content"><div><svg xmlns="http://www.w3.org/2000/svg" width="12" height="10" viewBox="0 0 12 10"><defs><style>.a{fill:#fff;}.a,.b,.c{stroke:#707070;}.b,.e{fill:none;}.c{fill:#707070;}.d{stroke:none;}</style></defs><g transform="translate(-1573 -718)"><g class="a" transform="translate(1573 718)"><rect class="d" width="12" height="10" rx="2"/><rect class="e" x="0.5" y="0.5" width="11" height="9" rx="1.5"/></g><line class="b" x2="11" transform="translate(1573.5 721.5)"/><line class="b" y1="9" transform="translate(1580.5 718.5)"/><line class="b" x2="11" transform="translate(1573.5 724.5)"/><g class="c" transform="translate(1573 728) rotate(-90)"><path class="d" d="M2,0H8a2,2,0,0,1,2,2V4a0,0,0,0,1,0,0H0A0,0,0,0,1,0,4V2A2,2,0,0,1,2,0Z"/><path class="e" d="M2,.5H8A1.5,1.5,0,0,1,9.5,2V3.5a0,0,0,0,1,0,0H.5a0,0,0,0,1,0,0V2A1.5,1.5,0,0,1,2,.5Z"/></g></g></svg><span class="table-toggle-text">切换表头列</span></div><div class="table-toggle-switch-container"><div class="table-toggle-switch-shell"><div class="table-toggle-switch-track"><div class="table-toggle-switch-thumb"></div></div><input type="checkbox" role="switch" class="table-toggle-switch-checkbox"></div></div></div>`
 
       // 组装菜单
       dropdown.appendChild(toggleRowOption)
@@ -57,6 +132,28 @@ export function tableHeaderMenuPlugin() {
         editorContainer.appendChild(menuContainer)
       }
 
+      // 更新表头状态的函数
+      function updateHeaderStatus() {
+        const headerRowEnabled = isHeaderRowEnabled(editorView)
+        const headerColEnabled = isHeaderColumnEnabled(editorView)
+
+        // 更新开关状态
+        updateToggleButton(toggleRowOption, headerRowEnabled)
+        updateToggleButton(toggleColOption, headerColEnabled)
+      }
+
+      // 菜单打开事件 - 读取当前状态
+      menuButton.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // 在显示下拉菜单前更新状态
+        updateHeaderStatus()
+
+        // 切换下拉菜单容器的显示状态
+        dropdownContainer.classList.toggle('visible')
+      })
+
       // 遮罩层点击事件
       overlay.addEventListener('click', (e) => {
         e.preventDefault()
@@ -66,30 +163,27 @@ export function tableHeaderMenuPlugin() {
         dropdownContainer.classList.remove('visible')
       })
 
-      // 按钮点击事件
-      menuButton.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-
-        // 切换下拉菜单容器的显示状态
-        dropdownContainer.classList.toggle('visible')
-      })
-
       // 菜单项点击事件
       toggleRowOption.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
         toggleHeaderRow(editorView.state, editorView.dispatch)
-        dropdownContainer.classList.remove('visible')
-        editorView.focus()
+
+        // 切换后等待状态更新，然后再次读取状态
+        setTimeout(() => {
+          updateHeaderStatus()
+        }, 10)
       })
 
       toggleColOption.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
         toggleHeaderColumn(editorView.state, editorView.dispatch)
-        dropdownContainer.classList.remove('visible')
-        editorView.focus()
+
+        // 切换后等待状态更新，然后再次读取状态
+        setTimeout(() => {
+          updateHeaderStatus()
+        }, 10)
       })
 
       // 点击外部区域关闭下拉菜单
@@ -101,16 +195,18 @@ export function tableHeaderMenuPlugin() {
 
       // 监听表格选择状态
       function updateMenuVisibility() {
-        const tableSelected = isInTable(editorView.state)
-        if (tableSelected) {
+        // 仅当在表格内时显示菜单
+        if (isInTable(editorView.state)) {
           menuContainer.classList.add('visible')
         } else {
           menuContainer.classList.remove('visible')
+          // 如果不在表格内，同时确保下拉菜单也隐藏
+          dropdownContainer.classList.remove('visible')
         }
       }
 
-      // 初始检查菜单可见性
-      updateMenuVisibility()
+      // 初始化时隐藏菜单容器
+      menuContainer.classList.remove('visible')
 
       // 保存事件处理函数引用以便稍后清理
       const documentClickHandler = (e: MouseEvent) => {

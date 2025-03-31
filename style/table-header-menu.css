@@ -16,6 +16,7 @@
   user-select: none;
   font-size: 13px;
   color: #000;
+  z-index: 100;
 }
 
 .table-header-menu.visible {
@@ -47,7 +48,6 @@
   top: 100%;
   left: 0;
   opacity: 0;
-
   visibility: hidden;
   transition:
     opacity 0.2s ease,
@@ -96,4 +96,77 @@
 .table-header-menu-item:hover {
   background: #ededed;
   border-radius: 5px 5px 5px 5px;
+}
+
+/* 菜单项内容的弹性布局 */
+.table-toggle-content {
+  display: flex;
+}
+
+/* 菜单项文本样式 */
+.table-toggle-text {
+  padding-left: 7px;
+}
+
+/* 开关控件右侧自动布局 */
+.table-toggle-switch-container {
+  margin-left: auto;
+  min-width: 0px;
+  flex-shrink: 0;
+}
+
+/* 开关外壳 */
+.table-toggle-switch-shell {
+  position: relative;
+  border-radius: 44px;
+  --pseudoHover--background: rgba(55, 53, 47, 0.06);
+  --pseudoActive--background: rgba(55, 53, 47, 0.16);
+}
+
+/* 开关轨道 */
+.table-toggle-switch-track {
+  display: flex;
+  flex-shrink: 0;
+  height: 14px;
+  width: 26px;
+  border-radius: 44px;
+  padding: 2px;
+  box-sizing: content-box;
+  background: rgba(135, 131, 120, 0.3); /* 默认禁用状态 */
+  transition:
+    background 200ms,
+    box-shadow 200ms;
+}
+
+/* 开关轨道启用状态 */
+.table-toggle-switch-track.enabled {
+  background: rgb(35, 131, 226);
+}
+
+/* 开关滑块 */
+.table-toggle-switch-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 44px;
+  background: white;
+  transition:
+    transform 200ms ease-out,
+    background 200ms ease-out;
+  transform: translateX(0px) translateY(0px); /* 默认禁用状态 */
+}
+
+/* 开关滑块启用状态 */
+.table-toggle-switch-track.enabled .table-toggle-switch-thumb {
+  transform: translateX(12px) translateY(0px);
+}
+
+/* 隐藏复选框但保持可点击 */
+.table-toggle-switch-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  top: 0px;
+  left: 0px;
+  cursor: pointer;
 }
