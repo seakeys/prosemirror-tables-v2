@@ -1,45 +1,99 @@
-/* 菜单按钮 */
+/* 表格菜单容器 */
 .table-header-menu {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
   position: absolute;
-  top: -40px;
-  right: 2px;
-  z-index: 5;
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 14px;
+  top: -34px;
+  right: 0;
+  width: 60px;
   height: 24px;
-  width: 24px;
-  text-align: center;
-  padding: 0;
-  margin: 0;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-  pointer-events: auto; /* 允许按钮接收事件 */
+  background: #ffffff;
+  border-radius: 3px 3px 3px 3px;
+  border: 1px solid #dedede;
+  user-select: none;
+  font-size: 13px;
+  color: #000;
+}
+
+.table-header-menu.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 表格菜单按钮 */
+.table-header-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  gap: 6px;
+  height: 100%;
+}
+
+.table-header-menu-button:hover {
+  background: rgba(53, 53, 47, 0.06);
+}
+
+.table-header-menu-button:active {
+  background: rgba(53, 53, 47, 0.16);
+}
+
+/* 下拉菜单容器 */
+.table-header-dropdown-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  opacity: 0;
+
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+.table-header-dropdown-container.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 遮罩层 */
+.table-header-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  z-index: 5;
+  opacity: 1;
+  transition: opacity 0.2s ease;
 }
 
 /* 下拉菜单 */
 .table-header-dropdown {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  display: none;
-  min-width: 120px;
-  z-index: 11;
-  pointer-events: auto; /* 允许下拉菜单接收事件 */
+  position: relative;
+  z-index: 6;
+  width: 220px;
+  height: 63px;
+  background: #fcfcfc;
+  box-shadow: 0px 3px 10px 1px rgba(0, 0, 0, 0.3);
+  border-radius: 8px 8px 8px 8px;
+  border: 1px solid #c6c6c6;
+  margin-top: 6px;
+  padding: 5px;
 }
 
 /* 菜单项 */
 .table-header-menu-item {
-  padding: 8px 12px;
+  padding: 6px 8px;
   cursor: pointer;
 }
 
+/* 菜单项悬停效果 */
 .table-header-menu-item:hover {
-  background-color: #f0f0f0;
+  background: #ededed;
+  border-radius: 5px 5px 5px 5px;
 }
