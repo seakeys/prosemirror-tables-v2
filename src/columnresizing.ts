@@ -54,8 +54,8 @@ export type Dragging = { startX: number; startWidth: number }
  */
 export function columnResizing({
   handleWidth = 5,
-  cellMinWidth = 25,
-  defaultCellMinWidth = 100,
+  cellMinWidth = 35,
+  defaultCellMinWidth = 120,
   View = TableView,
   lastColumnResizable = true,
 }: ColumnResizingOptions = {}): Plugin {

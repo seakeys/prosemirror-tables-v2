@@ -1,13 +1,34 @@
+.ProseMirror {
+  font-size: 14px;
+  padding: 2px;
+}
+
+.ProseMirror:focus-visible {
+  outline: none;
+}
+
+.ProseMirror p {
+  margin: 7px 0;
+}
+
 .ProseMirror table {
   border-collapse: collapse;
   table-layout: fixed;
-  width: 100%;
+  width: auto;
 }
 .ProseMirror td,
 .ProseMirror th {
   vertical-align: top;
   box-sizing: border-box;
   position: relative;
+  border: 1px solid #dedede;
+  padding: 0px 9px;
+}
+
+.ProseMirror th {
+  font-weight: bold;
+  text-align: left;
+  background-color: rgb(247, 246, 243);
 }
 
 .ProseMirror td:not([data-colwidth]):not(.column-resize-dragging),
