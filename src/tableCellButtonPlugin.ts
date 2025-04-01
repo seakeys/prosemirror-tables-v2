@@ -1,4 +1,4 @@
-import { EditorState, Plugin, PluginKey, Transaction } from 'prosemirror-state'
+import { EditorState, Plugin, PluginKey, TextSelection, Transaction } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { TableMap } from './tablemap'
 import { cellAround } from './util'
@@ -352,13 +352,25 @@ function fillMenuItems(view: EditorView, menuItems: MenuItem[]): void {
           const pluginState = tableButtonsKey.getState(state)
           if (pluginState && pluginState.activeMenuType) {
             // 根据菜单类型确定行还是列选择
-            const activeRow = pluginState.activeMenuType === 'row' ? newPosition : -1
-            const activeCol = pluginState.activeMenuType === 'column' ? newPosition : -1
+            const activeRow = pluginState.activeMenuType === 'row' ? newPosition : 0
+            const activeCol = pluginState.activeMenuType === 'column' ? newPosition : 0
 
-            // 应用选择
+            // 使用setTimeout确保在命令执行后应用选择
             setTimeout(() => {
-              // 使用setTimeout确保在命令执行后应用选择
-              selectTableRowOrColumn(view, pluginState.activeMenuType, activeRow, activeCol)
+              // 选择新添加的行或列的第一个单元格
+              selectCellAt(view, activeRow, activeCol)
+
+              // 移除所有按钮的 focus 状态
+              Object.keys(buttonRefs).forEach((key) => buttonRefs[key].classList.remove('focus'))
+
+              // 更新装饰按钮状态
+              if (pluginState.activeMenuType === 'row') {
+                // 更新行按钮状态
+                updateActivePosition(view, newPosition, -1)
+              } else if (pluginState.activeMenuType === 'column') {
+                // 更新列按钮状态
+                updateActivePosition(view, -1, newPosition)
+              }
             }, 0)
           }
         }
@@ -370,6 +382,69 @@ function fillMenuItems(view: EditorView, menuItems: MenuItem[]): void {
 
     pluginState.sharedMenu?.appendChild(menuItem)
   })
+}
+
+// 选择指定位置的单元格
+function selectCellAt(view: EditorView, row: number, col: number): boolean {
+  // 获取文档
+  const { doc } = view.state
+
+  // 查找表格
+  let tablePos = -1
+  let table: PMNode | null = null
+
+  doc.descendants((node, pos) => {
+    if (tablePos !== -1) return false // 已找到表格
+    if (node.type.spec.tableRole === 'table') {
+      tablePos = pos
+      table = node
+      return false
+    }
+    return true
+  })
+
+  if (tablePos === -1 || !table) return false
+
+  // 获取表格映射
+  const tableStart = tablePos + 1
+  const tableMap = TableMap.get(table)
+
+  // 确保行列索引在表格范围内
+  if (row < 0 || row >= tableMap.height || col < 0 || col >= tableMap.width) {
+    return false
+  }
+
+  // 获取目标单元格位置
+  const cellIndex = row * tableMap.width + col
+  const cellPos = tableMap.map[cellIndex]
+
+  // 创建目标单元格的ResolvedPos
+  const $cell = doc.resolve(tableStart + cellPos)
+
+  // 创建一个事务
+  const tr = view.state.tr
+
+  // 创建单元格选择
+  const cellSelection = new CellSelection($cell)
+  tr.setSelection(cellSelection)
+
+  // 应用选择
+  view.dispatch(tr)
+
+  // 在单元格中定位光标（设置焦点）
+  setTimeout(() => {
+    // 获取单元格内容的开始位置
+    const cellContentStart = tableStart + cellPos + 1 // +1 是为了跳过单元格节点本身进入内容
+
+    // 创建文本选择并应用
+    const textSelection = TextSelection.create(doc, cellContentStart)
+    view.dispatch(view.state.tr.setSelection(textSelection))
+
+    // 确保编辑器获得焦点
+    view.focus()
+  }, 10)
+
+  return true
 }
 
 // 菜单定位函数
