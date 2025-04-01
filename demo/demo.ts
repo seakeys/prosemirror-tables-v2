@@ -22,6 +22,7 @@ import { tableOverlayPlugin } from '../src/tableOverlayPlugin'
 import { tableAddCellButtonPlugin } from '../src/tableAddCellButtonPlugin'
 import { tableCellButtonPlugin } from '../src/tableCellButtonPlugin'
 import { tableDragPlugin } from '../src/tableDragPlugin'
+import { getStoredTableContent, initTableLocalStorage } from '../src/tableLocalStorage'
 
 const schema = new Schema({
   nodes: baseSchema.spec.nodes.append(
@@ -60,7 +61,11 @@ const tableKeymap = {
 const contentElement = document.querySelector('#content')
 if (!contentElement) throw new Error('找不到 #content 元素')
 
-const doc = DOMParser.fromSchema(schema).parse(contentElement)
+// 解析默认内容
+const defaultDoc = DOMParser.fromSchema(schema).parse(contentElement)
+
+// 优先使用本地存储的内容，如果没有则使用默认内容
+const doc = getStoredTableContent(schema, defaultDoc)
 
 let state = EditorState.create({
   doc,
@@ -84,6 +89,9 @@ const fix = fixTables(state)
 if (fix) state = state.apply(fix.setMeta('addToHistory', false))
 
 const view = new EditorView(document.querySelector('#editor'), { state })
+
+// 初始化表格本地存储功能
+initTableLocalStorage(view, schema)
 
 declare global {
   interface Window {
