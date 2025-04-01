@@ -1,10 +1,22 @@
-import { EditorState, Plugin, PluginKey, TextSelection, Transaction } from 'prosemirror-state'
+import { EditorState, Plugin, PluginKey, Transaction } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { TableMap } from './tablemap'
 import { cellAround } from './util'
 import { EditorView } from 'prosemirror-view'
 import { Node as PMNode } from 'prosemirror-model'
-import { addColumnAfter, addColumnBefore, addRowAfter, addRowBefore, clearColumnContent, clearRowContent, deleteColumn, deleteRow, duplicateColumn, duplicateRow } from './commands'
+import {
+  addColumnAfter,
+  addColumnBefore,
+  addRowAfter,
+  addRowBefore,
+  clearColumnContent,
+  clearRowContent,
+  deleteColumn,
+  deleteRow,
+  duplicateColumn,
+  duplicateRow,
+  selectCellAt,
+} from './commands'
 import { CellSelection } from './cellselection'
 
 // 菜单项接口定义
@@ -382,69 +394,6 @@ function fillMenuItems(view: EditorView, menuItems: MenuItem[]): void {
 
     pluginState.sharedMenu?.appendChild(menuItem)
   })
-}
-
-// 选择指定位置的单元格
-function selectCellAt(view: EditorView, row: number, col: number): boolean {
-  // 获取文档
-  const { doc } = view.state
-
-  // 查找表格
-  let tablePos = -1
-  let table: PMNode | null = null
-
-  doc.descendants((node, pos) => {
-    if (tablePos !== -1) return false // 已找到表格
-    if (node.type.spec.tableRole === 'table') {
-      tablePos = pos
-      table = node
-      return false
-    }
-    return true
-  })
-
-  if (tablePos === -1 || !table) return false
-
-  // 获取表格映射
-  const tableStart = tablePos + 1
-  const tableMap = TableMap.get(table)
-
-  // 确保行列索引在表格范围内
-  if (row < 0 || row >= tableMap.height || col < 0 || col >= tableMap.width) {
-    return false
-  }
-
-  // 获取目标单元格位置
-  const cellIndex = row * tableMap.width + col
-  const cellPos = tableMap.map[cellIndex]
-
-  // 创建目标单元格的ResolvedPos
-  const $cell = doc.resolve(tableStart + cellPos)
-
-  // 创建一个事务
-  const tr = view.state.tr
-
-  // 创建单元格选择
-  const cellSelection = new CellSelection($cell)
-  tr.setSelection(cellSelection)
-
-  // 应用选择
-  view.dispatch(tr)
-
-  // 在单元格中定位光标（设置焦点）
-  setTimeout(() => {
-    // 获取单元格内容的开始位置
-    const cellContentStart = tableStart + cellPos + 1 // +1 是为了跳过单元格节点本身进入内容
-
-    // 创建文本选择并应用
-    const textSelection = TextSelection.create(doc, cellContentStart)
-    view.dispatch(view.state.tr.setSelection(textSelection))
-
-    // 确保编辑器获得焦点
-    view.focus()
-  }, 10)
-
-  return true
 }
 
 // 菜单定位函数

@@ -9,7 +9,7 @@ import { tableNodeTypes, TableRole } from './schema'
 import { Rect, TableMap } from './tablemap'
 import { addColSpan, cellAround, CellAttrs, cellWrapping, columnIsHeader, isInTable, moveCellForward, removeColSpan, selectionCell } from './util'
 import { baseKeymap } from 'prosemirror-commands'
-
+import { EditorView } from 'prosemirror-view'
 /**
  * @public
  */
@@ -1181,4 +1181,67 @@ export function customBackspace(state: EditorState, dispatch?: (tr: Transaction)
 
   // 其他情况使用原有的backspace逻辑
   return baseKeymap.Backspace(state, dispatch)
+}
+
+// 选择指定位置的单元格
+export function selectCellAt(view: EditorView, row: number, col: number): boolean {
+  // 获取文档
+  const { doc } = view.state
+
+  // 查找表格
+  let tablePos = -1
+  let table: Node | null = null
+
+  doc.descendants((node, pos) => {
+    if (tablePos !== -1) return false // 已找到表格
+    if (node.type.spec.tableRole === 'table') {
+      tablePos = pos
+      table = node
+      return false
+    }
+    return true
+  })
+
+  if (tablePos === -1 || !table) return false
+
+  // 获取表格映射
+  const tableStart = tablePos + 1
+  const tableMap = TableMap.get(table)
+
+  // 确保行列索引在表格范围内
+  if (row < 0 || row >= tableMap.height || col < 0 || col >= tableMap.width) {
+    return false
+  }
+
+  // 获取目标单元格位置
+  const cellIndex = row * tableMap.width + col
+  const cellPos = tableMap.map[cellIndex]
+
+  // 创建目标单元格的ResolvedPos
+  const $cell = doc.resolve(tableStart + cellPos)
+
+  // 创建一个事务
+  const tr = view.state.tr
+
+  // 创建单元格选择
+  const cellSelection = new CellSelection($cell)
+  tr.setSelection(cellSelection)
+
+  // 应用选择
+  view.dispatch(tr)
+
+  // 在单元格中定位光标（设置焦点）
+  setTimeout(() => {
+    // 获取单元格内容的开始位置
+    const cellContentStart = tableStart + cellPos + 1 // +1 是为了跳过单元格节点本身进入内容
+
+    // 创建文本选择并应用
+    const textSelection = TextSelection.create(doc, cellContentStart)
+    view.dispatch(view.state.tr.setSelection(textSelection))
+
+    // 确保编辑器获得焦点
+    view.focus()
+  }, 10)
+
+  return true
 }
