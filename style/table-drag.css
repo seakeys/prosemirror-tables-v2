@@ -1,0 +1,13 @@
+.table-container {
+  position: relative;
+  cursor: default;
+  transform: translate(0px, 0px);
+  transition: transform 0.05s ease; /* 添加轻微动画，使移动更平滑 */
+}
+
+.table-container.dragging {
+  z-index: 100;
+  opacity: 0.6;
+  pointer-events: none;
+  transition: none; /* 拖动时禁用过渡动画 */
+}

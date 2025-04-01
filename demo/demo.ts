@@ -5,6 +5,7 @@ import '../style/table-header-menu.css'
 import '../style/table-overlay.css'
 import '../style/table-bottom-right-buttons.css'
 import '../style/table-top-left-buttons.css'
+import '../style/table-drag.css'
 
 import { EditorView } from 'prosemirror-view'
 import { EditorState } from 'prosemirror-state'
@@ -20,6 +21,7 @@ import { tableHeaderMenuPlugin } from '../src/tableHeaderMenu'
 import { tableOverlayPlugin } from '../src/tableOverlayPlugin'
 import { tableAddCellButtonPlugin } from '../src/tableAddCellButtonPlugin'
 import { tableCellButtonPlugin } from '../src/tableCellButtonPlugin'
+import { tableDragPlugin } from '../src/tableDragPlugin'
 
 const schema = new Schema({
   nodes: baseSchema.spec.nodes.append(
@@ -71,6 +73,7 @@ let state = EditorState.create({
     tableOverlayPlugin(),
     tableAddCellButtonPlugin(),
     tableCellButtonPlugin(),
+    tableDragPlugin(),
     // 快捷键
     keymap(tableKeymap),
     tableEditing(),
