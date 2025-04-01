@@ -15,7 +15,7 @@ import { keymap } from 'prosemirror-keymap'
 import { baseKeymap } from 'prosemirror-commands'
 import { history, undo, redo } from 'prosemirror-history'
 
-import { customBackspace, deleteTableRowOrColumn, duplicateTableRowOrColumn, goToNextCell } from '../src'
+import { deleteTableRowOrColumn, duplicateTableRowOrColumn, goToNextCell, tableSelectAll } from '../src'
 import { tableEditing, columnResizing, tableNodes, fixTables } from '../src'
 import { tableHeaderMenuPlugin } from '../src/tableHeaderMenu'
 import { tableOverlayPlugin } from '../src/tableOverlayPlugin'
@@ -52,9 +52,9 @@ const tableKeymap = {
   'Mod-z': undo,
   'Mod-y': redo,
   'Mod-Shift-z': redo,
-  'Ctrl-d': duplicateTableRowOrColumn,
+  'Mod-d': duplicateTableRowOrColumn,
+  'Mod-a': tableSelectAll,
   Delete: deleteTableRowOrColumn,
-  Backspace: customBackspace,
 }
 
 const contentElement = document.querySelector('#content')

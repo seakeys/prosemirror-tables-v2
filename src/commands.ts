@@ -1,7 +1,7 @@
 // 此文件定义了许多表格相关的命令。
 
 import { Fragment, Node, NodeType, ResolvedPos, Slice } from 'prosemirror-model'
-import { Command, EditorState, TextSelection, Transaction } from 'prosemirror-state'
+import { Command, EditorState, NodeSelection, TextSelection, Transaction } from 'prosemirror-state'
 
 import { CellSelection } from './cellselection'
 import type { Direction } from './input'
@@ -1162,27 +1162,6 @@ export function duplicateTableRowOrColumn(state: EditorState, dispatch?: (tr: Tr
   return false
 }
 
-/**
- * 自定义Backspace命令，处理以下情况：
- * 整个文档被选中时阻止删除
- */
-export function customBackspace(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
-  const sel = state.selection
-
-  // 检查选择是否为空
-  if (!sel.empty) {
-    const { from, to } = sel
-    // 检查是否选中了整个文档
-    if (from === 0 && to >= state.doc.content.size - 2) {
-      console.log('阻止删除整个文档')
-      return true // 阻止删除
-    }
-  }
-
-  // 其他情况使用原有的backspace逻辑
-  return baseKeymap.Backspace(state, dispatch)
-}
-
 // 选择指定位置的单元格
 export function selectCellAt(view: EditorView, row: number, col: number): boolean {
   // 获取文档
@@ -1244,4 +1223,52 @@ export function selectCellAt(view: EditorView, row: number, col: number): boolea
   }, 10)
 
   return true
+}
+
+/**
+ * 处理表格中的全选命令
+ * 第一次调用时选中当前单元格内容，再次调用时选中整个表格
+ * 如果单元格为空，则直接选中整个表格
+ *
+ * @public
+ */
+export function tableSelectAll(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+  // 检查是否在表格中
+  if (!isInTable(state)) return false
+
+  // 获取当前选区
+  const sel = state.selection
+
+  // 获取当前单元格
+  const $cell = cellAround(sel.$head)
+  if (!$cell) return false
+
+  // 获取当前单元格节点
+  const cellNode = $cell.nodeAfter
+  if (!cellNode) return false
+
+  // 检查是否已经选中了整个单元格内容
+  const cellStart = $cell.pos + 1 // 单元格内容开始位置
+  const cellEnd = $cell.pos + cellNode.nodeSize - 1 // 单元格内容结束位置
+
+  // 如果当前选区正好是单元格内容，或者单元格是空的，则选中整个表格
+  if ((sel.from === cellStart && sel.to === cellEnd) || cellNode.content.size === 2) {
+    // 空单元格的内容大小为2(包含一个空段落)
+    // 选中整个表格
+    const tablePos = $cell.start(-1) - 1
+
+    if (dispatch) {
+      // 创建表格节点选择
+      const tr = state.tr.setSelection(new NodeSelection(state.doc.resolve(tablePos)))
+      dispatch(tr)
+    }
+    return true
+  } else {
+    // 选中当前单元格的全部内容
+    if (dispatch) {
+      const tr = state.tr.setSelection(new TextSelection(state.doc.resolve(cellStart), state.doc.resolve(cellEnd)))
+      dispatch(tr)
+    }
+    return true
+  }
 }
