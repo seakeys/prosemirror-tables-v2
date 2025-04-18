@@ -30,8 +30,11 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  gap: 6px;
   height: 100%;
+}
+
+.table-header-menu-button > span {
+  padding-right: 6px;
 }
 
 .table-header-menu-button:hover {

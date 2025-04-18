@@ -1,41 +1,46 @@
 <!doctype html>
-<meta charset="utf8" />
-<title>Table</title>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Table</title>
 
-<style>
-  body {
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
-    cursor: grabbing;
-  }
-</style>
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+        cursor: grabbing;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="table-container">
+      <div style="display: none" id="content">
+        <table>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </table>
+      </div>
 
-<main class="table-container">
-  <div style="display: none" id="content">
-    <table>
-      <tr>
-        <td></td>
-        <td></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td></td>
-        <td></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td></td>
-        <td></td>
-        <td></td>
-      </tr>
-    </table>
-  </div>
+      <div id="editor"></div>
+    </main>
 
-  <div id="editor"></div>
-</main>
-
-<script type="module" src="./demo.ts"></script>
+    <script type="module" src="./demo.ts"></script>
+  </body>
+</html>

@@ -1,6 +1,7 @@
 .ProseMirror {
   font-size: 14px;
   padding: 2px;
+  outline: none;
 }
 
 .ProseMirror:focus-visible {

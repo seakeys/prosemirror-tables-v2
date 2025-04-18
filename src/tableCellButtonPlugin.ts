@@ -90,7 +90,7 @@ export function tableCellButtonPlugin(): Plugin {
     props: {
       decorations(state) {
         const pluginState = tableButtonsKey.getState(state)
-        return pluginState?.decorationSet ?? DecorationSet.empty
+        return pluginState?.decorationSet || DecorationSet.empty
       },
 
       handleDOMEvents: {
